@@ -21,6 +21,8 @@ import { EmailAutomationHub } from './admin/EmailAutomationHub';
 import { CohortSettings } from './admin/CohortSettings';
 import { AdminBottomNav, AdminTabType } from './admin/AdminBottomNav';
 import { DreamTeamLogo } from './common/DreamTeamLogo';
+import { AdminAccessGate } from './admin/AdminAccessGate';
+import { isAuthorizedAdmin } from '../constants/admins';
 
 interface AdminDashboardProps {
   cohorts: Cohort[];
@@ -31,6 +33,8 @@ interface AdminDashboardProps {
   attendanceRecords: AttendanceRecord[];
   campaigns: EmailCampaign[];
   currentUser?: { email: string; name: string; photoURL?: string } | null;
+  onAdminAuthenticated?: (email: string, name: string) => void;
+  onReturnToStudentView?: () => void;
   onRefresh: () => void;
 }
 
@@ -43,10 +47,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   attendanceRecords,
   campaigns,
   currentUser,
+  onAdminAuthenticated,
+  onReturnToStudentView,
   onRefresh,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTabType>('classes');
   const [tabExtraState, setTabExtraState] = useState<any>(null);
+
+  // Check role-based admin whitelist
+  const isAuthorized = isAuthorizedAdmin(currentUser?.email);
+
+  if (!isAuthorized) {
+    return (
+      <AdminAccessGate
+        currentUser={currentUser}
+        onAdminAuthenticated={(email, name) => {
+          if (onAdminAuthenticated) {
+            onAdminAuthenticated(email, name);
+          }
+        }}
+        onReturnToStudentView={onReturnToStudentView || (() => {})}
+      />
+    );
+  }
 
   const handleNavigateToTab = (tab: AdminTabType, extraState?: any) => {
     setTabExtraState(extraState || null);

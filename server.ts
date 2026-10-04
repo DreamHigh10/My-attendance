@@ -25,6 +25,13 @@ const ai = new GoogleGenAI({
   },
 });
 
+export const AUTHORIZED_ADMIN_EMAILS = [
+  'ogungbadekehinde19@gmail.com',
+  'aduoluwaseyi33@gmail.com',
+  'paulstanleytobechukwu01@gmail.com',
+  'chiemelab166@gmail.com',
+];
+
 interface CohortData {
   id: string;
   name: string;

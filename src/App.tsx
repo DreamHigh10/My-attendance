@@ -166,6 +166,11 @@ export default function App() {
             attendanceRecords={attendanceRecords}
             campaigns={campaigns}
             currentUser={currentUser}
+            onAdminAuthenticated={(email, name) => {
+              setCurrentUser({ email, name, isGoogleAuth: true });
+              localStorage.setItem('dtp_student_email', email);
+            }}
+            onReturnToStudentView={() => setCurrentView('student')}
             onRefresh={loadData}
           />
         )}
