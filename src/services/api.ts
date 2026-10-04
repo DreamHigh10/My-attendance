@@ -140,14 +140,51 @@ export const api = {
     return data.student;
   },
 
-  async bulkImportStudents(cohortId: string, students: any[]): Promise<any> {
+  async bulkImportStudents(
+    cohortId: string, 
+    students: any[], 
+    meta?: { fileName?: string; fileSize?: number; uploadedBy?: string }
+  ): Promise<any> {
     const res = await fetch('/api/students/bulk-import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cohortId, students }),
+      body: JSON.stringify({ 
+        cohortId, 
+        students,
+        fileName: meta?.fileName,
+        fileSize: meta?.fileSize,
+        uploadedBy: meta?.uploadedBy,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to bulk import students');
+    return data;
+  },
+
+  async getImportedFiles(cohortId?: string): Promise<any[]> {
+    const url = cohortId ? `/api/imported-files?cohortId=${cohortId}` : '/api/imported-files';
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.files || [];
+  },
+
+  async deleteImportedFile(id: string, removeStudents = false): Promise<any> {
+    const res = await fetch(`/api/imported-files/${id}?removeStudents=${removeStudents}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete imported file');
+    return data;
+  },
+
+  async bulkDeleteStudents(ids: string[]): Promise<any> {
+    const res = await fetch('/api/students/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete students');
     return data;
   },
 

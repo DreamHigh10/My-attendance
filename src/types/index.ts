@@ -46,6 +46,18 @@ export interface Student {
   status: 'active' | 'at_risk' | 'graduated' | 'inactive';
   registeredAt: string;
   notes?: string;
+  importedFileId?: string;
+}
+
+export interface ImportedFileLog {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  recordsCount: number;
+  cohortId: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  studentIds: string[];
 }
 
 export interface EmailRecipient {

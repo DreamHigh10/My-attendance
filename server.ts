@@ -102,6 +102,17 @@ interface EmailCampaignData {
   }[];
 }
 
+interface ImportedFileData {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  recordsCount: number;
+  cohortId: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  studentIds: string[];
+}
+
 // Generate exactly 55 realistic cohort members for Dream Team Project Cohort 2
 const preloaded55Cohort2Members: StudentData[] = [
   { id: 'stu-01', cohortId: 'dtp-cohort-2', name: 'Emmanuel Adeyemi', email: 'emmanuel.adeyemi@dreamteam.org', phone: '+234 803 123 4567', status: 'active', registeredAt: '2026-09-01' },
@@ -271,6 +282,18 @@ const db = {
   ] as AttendanceRecordData[],
 
   campaigns: [] as EmailCampaignData[],
+  importedFiles: [
+    {
+      id: 'file-init-01',
+      fileName: 'DreamTeam_Cohort2_Master_Roster_55.xlsx',
+      fileSize: 45200,
+      recordsCount: 55,
+      cohortId: 'dtp-cohort-2',
+      uploadedAt: '2026-09-01T09:00:00.000Z',
+      uploadedBy: 'Engr. Kehinde Ogungbade',
+      studentIds: preloaded55Cohort2Members.map(s => s.id),
+    }
+  ] as ImportedFileData[],
 };
 
 // ---------------- API ROUTES ---------------- //
@@ -448,6 +471,9 @@ app.post('/api/attendance/verify-code', (req: Request, res: Response) => {
   });
 });
 
+// Concurrent check-in in-flight locks to prevent race conditions during high-traffic surges
+const activeCheckinLocks = new Set<string>();
+
 app.post('/api/attendance/mark', (req: Request, res: Response) => {
   const { code, studentEmail, studentName, studentPhone, feedback } = req.body;
 
@@ -457,68 +483,79 @@ app.post('/api/attendance/mark', (req: Request, res: Response) => {
 
   const cleanCode = String(code).trim().toUpperCase();
   const cleanEmail = String(studentEmail).toLowerCase().trim();
+  const lockKey = `${cleanEmail}:${cleanCode}`;
 
-  // Find class by code
-  const classSession = db.classes.find(c => c.code.trim().toUpperCase() === cleanCode);
-  if (!classSession) {
-    return res.status(404).json({ error: 'Invalid attendance word/code.' });
+  if (activeCheckinLocks.has(lockKey)) {
+    return res.status(429).json({ error: 'A check-in for this email is currently being processed. Please wait a second.' });
   }
 
-  if (!classSession.isAttendanceOpen) {
-    return res.status(400).json({ 
-      error: 'Attendance window for this class is currently closed by the administrator.' 
+  activeCheckinLocks.add(lockKey);
+
+  try {
+    // Find class by code
+    const classSession = db.classes.find(c => c.code.trim().toUpperCase() === cleanCode);
+    if (!classSession) {
+      return res.status(404).json({ error: 'Invalid attendance word/code.' });
+    }
+
+    if (!classSession.isAttendanceOpen) {
+      return res.status(400).json({ 
+        error: 'Attendance window for this class is currently closed by the administrator.' 
+      });
+    }
+
+    // Ensure student exists in cohort roster
+    let student = db.students.find(s => s.email.toLowerCase() === cleanEmail);
+    if (!student) {
+      return res.status(403).json({
+        error: 'Your email is not on the registered cohort list. Please contact the administrator.',
+      });
+    }
+
+    // Check duplicate
+    const existing = db.attendance.find(a => 
+      a.classId === classSession.id && a.studentEmail.toLowerCase() === cleanEmail
+    );
+
+    if (existing) {
+      return res.status(409).json({ 
+        error: `You have already marked your attendance for today's class on ${new Date(existing.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+        record: existing,
+      });
+    }
+
+    const newRecord: AttendanceRecordData = {
+      id: `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId: classSession.id,
+      cohortId: classSession.cohortId,
+      studentEmail: cleanEmail,
+      studentName: student.name || studentName || 'Participant',
+      studentPhone: student.phone || studentPhone || '',
+      status: 'present',
+      markedAt: new Date().toISOString(),
+      classCodeUsed: cleanCode,
+      feedback: feedback || '',
+    };
+
+    db.attendance.push(newRecord);
+
+    const studentTotalAttended = db.attendance.filter(a => a.studentEmail.toLowerCase() === cleanEmail).length;
+    const cohortTotalClasses = db.classes.filter(c => c.cohortId === classSession.cohortId).length;
+
+    res.json({
+      success: true,
+      message: "You've marked your attendance for today's class!",
+      record: newRecord,
+      classSession,
+      studentStats: {
+        totalAttended: studentTotalAttended,
+        totalCohortClasses: cohortTotalClasses,
+        attendanceRate: Math.round((studentTotalAttended / (cohortTotalClasses || 1)) * 100),
+      },
     });
+  } finally {
+    activeCheckinLocks.delete(lockKey);
   }
-
-  // Ensure student exists in cohort roster
-  let student = db.students.find(s => s.email.toLowerCase() === cleanEmail);
-  if (!student) {
-    return res.status(403).json({
-      error: 'Your email is not on the registered cohort list. Please contact the administrator.',
-    });
-  }
-
-  // Check duplicate
-  const existing = db.attendance.find(a => 
-    a.classId === classSession.id && a.studentEmail.toLowerCase() === cleanEmail
-  );
-
-  if (existing) {
-    return res.status(409).json({ 
-      error: `You have already marked your attendance for today's class on ${new Date(existing.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
-      record: existing,
-    });
-  }
-
-  const newRecord: AttendanceRecordData = {
-    id: `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-    classId: classSession.id,
-    cohortId: classSession.cohortId,
-    studentEmail: cleanEmail,
-    studentName: student.name || studentName || 'Participant',
-    studentPhone: student.phone || studentPhone || '',
-    status: 'present',
-    markedAt: new Date().toISOString(),
-    classCodeUsed: cleanCode,
-    feedback: feedback || '',
-  };
-
-  db.attendance.push(newRecord);
-
-  const studentTotalAttended = db.attendance.filter(a => a.studentEmail.toLowerCase() === cleanEmail).length;
-  const cohortTotalClasses = db.classes.filter(c => c.cohortId === classSession.cohortId).length;
-
-  res.json({
-    success: true,
-    message: "You've marked your attendance for today's class!",
-    record: newRecord,
-    classSession,
-    studentStats: {
-      totalAttended: studentTotalAttended,
-      totalCohortClasses: cohortTotalClasses,
-      attendanceRate: Math.round((studentTotalAttended / (cohortTotalClasses || 1)) * 100),
-    },
-  });
 });
 
 app.get('/api/attendance/class/:classId', (req: Request, res: Response) => {
@@ -658,6 +695,127 @@ app.post('/api/students/bulk-import', (req: Request, res: Response) => {
     addedCount,
     updatedCount,
     totalCohortStudents: db.students.filter(s => s.cohortId === cohortId).length
+  });
+});
+
+app.post('/api/students/bulk-import', (req: Request, res: Response) => {
+  const { cohortId, students, fileName, fileSize, uploadedBy } = req.body;
+  if (!cohortId || !Array.isArray(students) || students.length === 0) {
+    return res.status(400).json({ error: 'Valid cohortId and array of students are required.' });
+  }
+
+  let addedCount = 0;
+  let updatedCount = 0;
+  const processedStudentIds: string[] = [];
+
+  const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+
+  for (const s of students) {
+    if (!s.email || !s.name) continue;
+    const cleanEmail = String(s.email).toLowerCase().trim();
+    const cleanName = String(s.name).trim();
+    const cleanPhone = s.phone ? String(s.phone).trim() : '';
+
+    const existingIndex = db.students.findIndex(x => x.email.toLowerCase() === cleanEmail && x.cohortId === cohortId);
+    if (existingIndex >= 0) {
+      db.students[existingIndex].name = cleanName;
+      if (cleanPhone) db.students[existingIndex].phone = cleanPhone;
+      processedStudentIds.push(db.students[existingIndex].id);
+      updatedCount++;
+    } else {
+      const newId = `stu-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      db.students.push({
+        id: newId,
+        cohortId,
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        status: 'active',
+        registeredAt: new Date().toISOString().split('T')[0],
+        notes: s.notes || `Imported from ${fileName || 'file'}`,
+      });
+      processedStudentIds.push(newId);
+      addedCount++;
+    }
+  }
+
+  const newFileRecord: ImportedFileData = {
+    id: fileId,
+    fileName: fileName || `Roster_Import_${new Date().toISOString().split('T')[0]}.xlsx`,
+    fileSize: fileSize || students.length * 128,
+    recordsCount: students.length,
+    cohortId,
+    uploadedAt: new Date().toISOString(),
+    uploadedBy: uploadedBy || 'Admin',
+    studentIds: processedStudentIds,
+  };
+
+  db.importedFiles.unshift(newFileRecord);
+
+  res.json({ 
+    success: true, 
+    message: `Roster updated: ${addedCount} new members added, ${updatedCount} updated. Total cohort roster is now ${db.students.filter(s => s.cohortId === cohortId).length} members.`,
+    addedCount,
+    updatedCount,
+    fileRecord: newFileRecord,
+    totalCohortStudents: db.students.filter(s => s.cohortId === cohortId).length
+  });
+});
+
+// Imported Files Management & Deletion
+app.get('/api/imported-files', (req: Request, res: Response) => {
+  const cohortId = req.query.cohortId as string;
+  let files = db.importedFiles;
+  if (cohortId) {
+    files = files.filter(f => f.cohortId === cohortId);
+  }
+  res.json({ success: true, files });
+});
+
+app.delete('/api/imported-files/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const removeStudents = req.query.removeStudents === 'true' || req.body?.removeStudents === true;
+
+  const fileIndex = db.importedFiles.findIndex(f => f.id === id);
+  if (fileIndex === -1) {
+    return res.status(404).json({ error: 'Imported file record not found' });
+  }
+
+  const removedFile = db.importedFiles.splice(fileIndex, 1)[0];
+  let deletedStudentsCount = 0;
+
+  if (removeStudents && removedFile.studentIds && removedFile.studentIds.length > 0) {
+    const idsSet = new Set(removedFile.studentIds);
+    const initialLen = db.students.length;
+    db.students = db.students.filter(s => !idsSet.has(s.id));
+    deletedStudentsCount = initialLen - db.students.length;
+  }
+
+  res.json({
+    success: true,
+    message: removeStudents 
+      ? `File "${removedFile.fileName}" and ${deletedStudentsCount} associated roster records were permanently deleted.`
+      : `File record "${removedFile.fileName}" was removed from upload history.`,
+    removedFile,
+    deletedStudentsCount,
+  });
+});
+
+app.post('/api/students/bulk-delete', (req: Request, res: Response) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'Array of student IDs required.' });
+  }
+
+  const idsSet = new Set(ids);
+  const initialLen = db.students.length;
+  db.students = db.students.filter(s => !idsSet.has(s.id));
+  const deletedCount = initialLen - db.students.length;
+
+  res.json({
+    success: true,
+    message: `Successfully deleted ${deletedCount} student(s) from roster.`,
+    deletedCount,
   });
 });
 

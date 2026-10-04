@@ -33,6 +33,8 @@ interface AdminDashboardProps {
   attendanceRecords: AttendanceRecord[];
   campaigns: EmailCampaign[];
   currentUser?: { email: string; name: string; photoURL?: string } | null;
+  activeTab?: AdminTabType;
+  onTabChange?: (tab: AdminTabType) => void;
   onAdminAuthenticated?: (email: string, name: string) => void;
   onReturnToStudentView?: () => void;
   onRefresh: () => void;
@@ -47,12 +49,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   attendanceRecords,
   campaigns,
   currentUser,
+  activeTab: controlledActiveTab,
+  onTabChange,
   onAdminAuthenticated,
   onReturnToStudentView,
   onRefresh,
 }) => {
-  const [activeTab, setActiveTab] = useState<AdminTabType>('classes');
+  const [internalActiveTab, setInternalActiveTab] = useState<AdminTabType>('classes');
   const [tabExtraState, setTabExtraState] = useState<any>(null);
+
+  const activeTab = controlledActiveTab || internalActiveTab;
+  const setActiveTab = (tab: AdminTabType) => {
+    setInternalActiveTab(tab);
+    if (onTabChange) {
+      onTabChange(tab);
+    }
+  };
 
   // Check role-based admin whitelist
   const isAuthorized = isAuthorizedAdmin(currentUser?.email);

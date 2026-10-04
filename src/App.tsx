@@ -7,12 +7,15 @@ import { api } from './services/api';
 import { firebaseAuth } from './services/firebase';
 import { ArchitecturalBackground } from './components/common/ArchitecturalBackground';
 import { GoogleAuthModal } from './components/common/GoogleAuthModal';
+import { parseCurrentRoute, navigateTo, AppView, AdminTab } from './utils/navigation';
 import { RefreshCw, GraduationCap, Sparkles } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'student' | 'admin'>('student');
+  const initialRoute = parseCurrentRoute();
+  const [currentView, setCurrentView] = useState<AppView>(initialRoute.view);
+  const [adminTab, setAdminTab] = useState<AdminTab>(initialRoute.adminTab || 'classes');
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [selectedCohortId, setSelectedCohortId] = useState<string>('dtp-cohort-2');
+  const [selectedCohortId, setSelectedCohortId] = useState<string>(initialRoute.cohortId || 'dtp-cohort-2');
   const [classes, setClasses] = useState<ClassSession[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
@@ -24,6 +27,35 @@ export default function App() {
 
   // Authenticated user state
   const [currentUser, setCurrentUser] = useState<{ email: string; name: string; photoURL?: string; isGoogleAuth?: boolean } | null>(null);
+
+  // Synchronize with Browser History Popstate (Back/Forward buttons)
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state || parseCurrentRoute();
+      if (state.view) setCurrentView(state.view);
+      if (state.adminTab) setAdminTab(state.adminTab);
+      if (state.cohortId) setSelectedCohortId(state.cohortId);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Update View with History API
+  const handleViewChange = (newView: AppView) => {
+    setCurrentView(newView);
+    navigateTo(newView, newView === 'admin' ? adminTab : undefined, selectedCohortId);
+  };
+
+  const handleAdminTabChange = (newTab: AdminTab) => {
+    setAdminTab(newTab);
+    navigateTo('admin', newTab, selectedCohortId);
+  };
+
+  const handleCohortChange = (newCohortId: string) => {
+    setSelectedCohortId(newCohortId);
+    navigateTo(currentView, currentView === 'admin' ? adminTab : undefined, newCohortId);
+  };
 
   // Firebase auth state listener
   useEffect(() => {
@@ -158,10 +190,10 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={handleViewChange}
         cohorts={cohorts}
         selectedCohortId={selectedCohortId}
-        onSelectCohort={setSelectedCohortId}
+        onSelectCohort={handleCohortChange}
         activeClassCount={activeClasses.length}
         currentUser={currentUser}
         onSignOut={handleSignOut}
@@ -175,7 +207,7 @@ export default function App() {
           <StudentPortal
             cohorts={cohorts}
             selectedCohortId={selectedCohortId}
-            onSelectCohort={setSelectedCohortId}
+            onSelectCohort={handleCohortChange}
             currentUser={currentUser}
             onGoogleSignIn={handleGoogleSignIn}
           />
@@ -183,17 +215,19 @@ export default function App() {
           <AdminDashboard
             cohorts={cohorts}
             selectedCohortId={selectedCohortId}
-            onSelectCohort={setSelectedCohortId}
+            onSelectCohort={handleCohortChange}
             classes={classes}
             students={students}
             attendanceRecords={attendanceRecords}
             campaigns={campaigns}
             currentUser={currentUser}
+            activeTab={adminTab}
+            onTabChange={handleAdminTabChange}
             onAdminAuthenticated={(email, name) => {
               setCurrentUser({ email, name, isGoogleAuth: true });
               localStorage.setItem('dtp_student_email', email);
             }}
-            onReturnToStudentView={() => setCurrentView('student')}
+            onReturnToStudentView={() => handleViewChange('student')}
             onRefresh={loadData}
           />
         )}
