@@ -366,7 +366,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   <input
                     type="email"
                     required
-                    placeholder="Enter your registered email (e.g. emmanuel.adeyemi@dreamteam.org)"
+                    placeholder="Enter your registered email address"
                     value={emailInput}
                     onChange={(e) => {
                       setEmailInput(e.target.value);

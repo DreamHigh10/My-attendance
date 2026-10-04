@@ -154,129 +154,153 @@ export const ClassesManager: React.FC<ClassesManagerProps> = ({
         </button>
       </div>
 
-      {/* Classes Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-        {filteredClasses.map((cls) => {
-          const classAttendees = attendanceRecords.filter((a) => a.classId === cls.id);
-          const cohort = cohorts.find((c) => c.id === cls.cohortId);
+      {/* Classes Grid or Clean Empty State */}
+      {filteredClasses.length === 0 ? (
+        <div className="bg-white border border-dashed border-slate-300 rounded-3xl p-10 text-center shadow-xs">
+          <div className="w-14 h-14 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+            <Calendar className="w-7 h-7" />
+          </div>
+          <h3 className="text-lg font-black text-slate-900 mb-1">
+            No Classes Scheduled Yet
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mb-5">
+            Your schedule is clean and ready. Click below to schedule your first live class session and set its secret attendance code.
+          </p>
+          <button
+            onClick={() => {
+              setFormCohortId(selectedCohortId);
+              setIsCreateModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md cursor-pointer transition-all hover:scale-[1.02]"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Schedule First Class</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+          {filteredClasses.map((cls) => {
+            const classAttendees = attendanceRecords.filter((a) => a.classId === cls.id);
+            const cohort = cohorts.find((c) => c.id === cls.cohortId);
 
-          return (
-            <div
-              key={cls.id}
-              className={`bg-white border-2 rounded-3xl p-6 transition-all shadow-md flex flex-col justify-between ${
-                cls.isAttendanceOpen
-                  ? 'border-indigo-500/40 shadow-indigo-500/5 ring-4 ring-indigo-50/50'
-                  : 'border-slate-200 opacity-90'
-              }`}
-            >
-              {/* Header */}
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                    {cohort?.name || 'Cohort 2'}
-                  </span>
+            return (
+              <div
+                key={cls.id}
+                className={`bg-white border-2 rounded-3xl p-6 transition-all shadow-md flex flex-col justify-between ${
+                  cls.isAttendanceOpen
+                    ? 'border-indigo-500/40 shadow-indigo-500/5 ring-4 ring-indigo-50/50'
+                    : 'border-slate-200 opacity-90'
+                }`}
+              >
+                {/* Header */}
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                      {cohort?.name || 'Cohort 2'}
+                    </span>
 
-                  {/* Toggle Attendance Switch */}
-                  <button
-                    onClick={() => handleToggleAttendance(cls)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer ${
-                      cls.isAttendanceOpen
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
-                        : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${cls.isAttendanceOpen ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'}`} />
-                    <span>{cls.isAttendanceOpen ? 'Attendance Live' : 'Closed'}</span>
-                  </button>
+                    {/* Toggle Attendance Switch */}
+                    <button
+                      onClick={() => handleToggleAttendance(cls)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer ${
+                        cls.isAttendanceOpen
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
+                          : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${cls.isAttendanceOpen ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'}`} />
+                      <span>{cls.isAttendanceOpen ? 'Attendance Live' : 'Closed'}</span>
+                    </button>
+                  </div>
+
+                  <h4 className="text-base sm:text-lg font-black text-slate-900 mb-2 leading-snug">
+                    {cls.title}
+                  </h4>
+
+                  <div className="grid grid-cols-2 gap-2.5 text-xs text-slate-600 mb-4">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                      {new Date(cls.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </span>
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                      {cls.time}
+                    </span>
+                    <span className="flex items-center gap-1.5 col-span-2 font-medium">
+                      <User className="w-3.5 h-3.5 text-indigo-600" />
+                      Facilitator: <strong className="text-slate-900 font-bold">{cls.instructorName}</strong>
+                    </span>
+                  </div>
+
+                  {/* SECRET WORD CODE DISPLAY BOX */}
+                  <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border-2 border-indigo-200 rounded-2xl p-3.5 mb-4 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                        Secret Class Word (Attendance Code)
+                      </span>
+                      <span className="font-mono text-xl sm:text-2xl font-black text-indigo-700 tracking-wider uppercase">
+                        {cls.code}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        title="Copy Code"
+                        onClick={() => handleCopyCode(cls.code)}
+                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 shadow-2xs"
+                      >
+                        {copiedCode === cls.code ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedCode === cls.code ? 'Copied' : 'Copy'}</span>
+                      </button>
+
+                      <button
+                        title="Edit Code Word"
+                        onClick={() => setEditingClass(cls)}
+                        className="p-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 hover:text-indigo-600 transition-all shadow-2xs"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <h4 className="text-base sm:text-lg font-black text-slate-900 mb-2 leading-snug">
-                  {cls.title}
-                </h4>
-
-                <div className="grid grid-cols-2 gap-2.5 text-xs text-slate-600 mb-4">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                    {new Date(cls.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                  </span>
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Clock className="w-3.5 h-3.5 text-indigo-600" />
-                    {cls.time}
-                  </span>
-                  <span className="flex items-center gap-1.5 col-span-2 font-medium">
-                    <User className="w-3.5 h-3.5 text-indigo-600" />
-                    Facilitator: <strong className="text-slate-900 font-bold">{cls.instructorName}</strong>
-                  </span>
-                </div>
-
-                {/* SECRET WORD CODE DISPLAY BOX */}
-                <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border-2 border-indigo-200 rounded-2xl p-3.5 mb-4 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-                      Secret Class Word (Attendance Code)
-                    </span>
-                    <span className="font-mono text-xl sm:text-2xl font-black text-indigo-700 tracking-wider uppercase">
-                      {cls.code}
-                    </span>
+                {/* Bottom Actions */}
+                <div className="pt-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                    <Users className="w-4 h-4 text-emerald-600" />
+                    <span>{classAttendees.length} checked in today</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
-                      title="Copy Code"
-                      onClick={() => handleCopyCode(cls.code)}
-                      className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 shadow-2xs"
+                      onClick={() => setPresentingClass(cls)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-xs"
                     >
-                      {copiedCode === cls.code ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedCode === cls.code ? 'Copied' : 'Copy'}</span>
+                      <Tv className="w-3.5 h-3.5" />
+                      <span>Project Screen</span>
                     </button>
 
                     <button
-                      title="Edit Code Word"
-                      onClick={() => setEditingClass(cls)}
-                      className="p-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 hover:text-indigo-600 transition-all shadow-2xs"
+                      onClick={() => onNavigateToTab('attendance', { classId: cls.id })}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>View Logs</span>
+                    </button>
+
+                    <button
+                      onClick={() => onNavigateToTab('emails', { classTitle: cls.title, classCode: cls.code })}
+                      title="Broadcast Code via AI Email"
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-indigo-600 transition-all"
+                    >
+                      <Mail className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               </div>
-
-              {/* Bottom Actions */}
-              <div className="pt-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                  <Users className="w-4 h-4 text-emerald-600" />
-                  <span>{classAttendees.length} checked in today</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPresentingClass(cls)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-xs"
-                  >
-                    <Tv className="w-3.5 h-3.5" />
-                    <span>Project Screen</span>
-                  </button>
-
-                  <button
-                    onClick={() => onNavigateToTab('attendance', { classId: cls.id })}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all"
-                  >
-                    <span>View Logs</span>
-                  </button>
-
-                  <button
-                    onClick={() => onNavigateToTab('emails', { classTitle: cls.title, classCode: cls.code })}
-                    title="Broadcast Code via AI Email"
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-indigo-600 transition-all"
-                  >
-                    <Mail className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* CREATE NEW CLASS MODAL */}
       {isCreateModalOpen && (

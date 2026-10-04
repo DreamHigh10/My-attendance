@@ -1,130 +1,21 @@
 import { Cohort, ClassSession, AttendanceRecord, Student, EmailCampaign, ImportedFileLog } from '../types';
 
-export const DEFAULT_55_STUDENTS: Student[] = [
-  { id: 'stu-01', cohortId: 'dtp-cohort-2', name: 'Emmanuel Adeyemi', email: 'emmanuel.adeyemi@dreamteam.org', phone: '+234 803 123 4567', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-02', cohortId: 'dtp-cohort-2', name: 'Chioma Okafor', email: 'chioma.okafor@dreamteam.org', phone: '+234 812 987 6543', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-03', cohortId: 'dtp-cohort-2', name: 'Babajide Fashola', email: 'babajide.fashola@dreamteam.org', phone: '+234 701 456 7890', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-04', cohortId: 'dtp-cohort-2', name: 'Amina Bello', email: 'amina.bello@dreamteam.org', phone: '+234 809 333 2211', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-05', cohortId: 'dtp-cohort-2', name: 'David Nwachukwu', email: 'david.nwachukwu@dreamteam.org', phone: '+234 815 444 8899', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-06', cohortId: 'dtp-cohort-2', name: 'Blessing Udoh', email: 'blessing.udoh@dreamteam.org', phone: '+234 902 777 6655', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-07', cohortId: 'dtp-cohort-2', name: 'Tunde Bakare', email: 'tunde.bakare@dreamteam.org', phone: '+234 805 111 4433', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-08', cohortId: 'dtp-cohort-2', name: 'Zainab Ibrahim', email: 'zainab.ibrahim@dreamteam.org', phone: '+234 703 666 9900', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-09', cohortId: 'dtp-cohort-2', name: 'Oluwaseun Balogun', email: 'oluwaseun.balogun@dreamteam.org', phone: '+234 813 555 1234', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-10', cohortId: 'dtp-cohort-2', name: 'Fatima Abubakar', email: 'fatima.abubakar@dreamteam.org', phone: '+234 802 888 7766', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-11', cohortId: 'dtp-cohort-2', name: 'Kelechi Eze', email: 'kelechi.eze@dreamteam.org', phone: '+234 708 999 0011', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-12', cohortId: 'dtp-cohort-2', name: 'Ngozi Chukwu', email: 'ngozi.chukwu@dreamteam.org', phone: '+234 814 111 2233', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-13', cohortId: 'dtp-cohort-2', name: 'Samuel Olawale', email: 'samuel.olawale@dreamteam.org', phone: '+234 901 222 3344', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-14', cohortId: 'dtp-cohort-2', name: 'Aisha Mohammed', email: 'aisha.mohammed@dreamteam.org', phone: '+234 806 333 4455', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-15', cohortId: 'dtp-cohort-2', name: 'Victor Okonkwo', email: 'victor.okonkwo@dreamteam.org', phone: '+234 817 666 7788', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-16', cohortId: 'dtp-cohort-2', name: 'Precious Alabi', email: 'precious.alabi@dreamteam.org', phone: '+234 705 888 9900', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-17', cohortId: 'dtp-cohort-2', name: 'Ibrahim Danjuma', email: 'ibrahim.danjuma@dreamteam.org', phone: '+234 808 123 7890', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-18', cohortId: 'dtp-cohort-2', name: 'Grace Bassey', email: 'grace.bassey@dreamteam.org', phone: '+234 818 456 1234', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-19', cohortId: 'dtp-cohort-2', name: 'Femi Oladipo', email: 'femi.oladipo@dreamteam.org', phone: '+234 909 654 3210', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-20', cohortId: 'dtp-cohort-2', name: 'Hadiza Sanusi', email: 'hadiza.sanusi@dreamteam.org', phone: '+234 702 333 4455', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-21', cohortId: 'dtp-cohort-2', name: 'Chinedu Obi', email: 'chinedu.obi@dreamteam.org', phone: '+234 811 777 8899', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-22', cohortId: 'dtp-cohort-2', name: 'Maryam Usman', email: 'maryam.usman@dreamteam.org', phone: '+234 804 999 1122', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-23', cohortId: 'dtp-cohort-2', name: 'Ayomide Adeleke', email: 'ayomide.adeleke@dreamteam.org', phone: '+234 816 222 3344', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-24', cohortId: 'dtp-cohort-2', name: 'Joy Kenneth', email: 'joy.kenneth@dreamteam.org', phone: '+234 704 555 6677', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-25', cohortId: 'dtp-cohort-2', name: 'Mustapha Garba', email: 'mustapha.garba@dreamteam.org', phone: '+234 903 888 9900', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-26', cohortId: 'dtp-cohort-2', name: 'Rita Nnamdi', email: 'rita.nnamdi@dreamteam.org', phone: '+234 807 111 2233', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-27', cohortId: 'dtp-cohort-2', name: 'Kayode Ajayi', email: 'kayode.ajayi@dreamteam.org', phone: '+234 810 444 5566', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-28', cohortId: 'dtp-cohort-2', name: 'Halima Yakubu', email: 'halima.yakubu@dreamteam.org', phone: '+234 706 777 8899', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-29', cohortId: 'dtp-cohort-2', name: 'Obinna Umeh', email: 'obinna.umeh@dreamteam.org', phone: '+234 905 000 1122', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-30', cohortId: 'dtp-cohort-2', name: 'Esther Peters', email: 'esther.peters@dreamteam.org', phone: '+234 809 222 3344', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-31', cohortId: 'dtp-cohort-2', name: 'Usman Shehu', email: 'usman.shehu@dreamteam.org', phone: '+234 813 666 7788', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-32', cohortId: 'dtp-cohort-2', name: 'Yetunde Williams', email: 'yetunde.williams@dreamteam.org', phone: '+234 708 888 9900', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-33', cohortId: 'dtp-cohort-2', name: 'Gabriel Kalu', email: 'gabriel.kalu@dreamteam.org', phone: '+234 907 123 4567', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-34', cohortId: 'dtp-cohort-2', name: 'Bilikisu Lawal', email: 'bilikisu.lawal@dreamteam.org', phone: '+234 802 456 7890', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-35', cohortId: 'dtp-cohort-2', name: 'Segun Ogundipe', email: 'segun.ogundipe@dreamteam.org', phone: '+234 815 789 0123', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-36', cohortId: 'dtp-cohort-2', name: 'Ifunanya Okeke', email: 'ifunanya.okeke@dreamteam.org', phone: '+234 701 999 8877', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-37', cohortId: 'dtp-cohort-2', name: 'Kabiru Idris', email: 'kabiru.idris@dreamteam.org', phone: '+234 808 333 4455', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-38', cohortId: 'dtp-cohort-2', name: 'Tolulope Afolabi', email: 'tolulope.afolabi@dreamteam.org', phone: '+234 812 555 6677', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-39', cohortId: 'dtp-cohort-2', name: 'Chukwuma Ani', email: 'chukwuma.ani@dreamteam.org', phone: '+234 902 111 2233', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-40', cohortId: 'dtp-cohort-2', name: 'Khadijah Gidado', email: 'khadijah.gidado@dreamteam.org', phone: '+234 703 444 5566', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-41', cohortId: 'dtp-cohort-2', name: 'Dapo Soyinka', email: 'dapo.soyinka@dreamteam.org', phone: '+234 805 777 8899', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-42', cohortId: 'dtp-cohort-2', name: 'Uchechi Nwosu', email: 'uchechi.nwosu@dreamteam.org', phone: '+234 814 000 1122', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-43', cohortId: 'dtp-cohort-2', name: 'Aliyu Balarabe', email: 'aliyu.balarabe@dreamteam.org', phone: '+234 901 333 4455', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-44', cohortId: 'dtp-cohort-2', name: 'Busayo Ogunleye', email: 'busayo.ogunleye@dreamteam.org', phone: '+234 705 666 7788', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-45', cohortId: 'dtp-cohort-2', name: 'Nonso Ikechukwu', email: 'nonso.ikechukwu@dreamteam.org', phone: '+234 818 999 0011', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-46', cohortId: 'dtp-cohort-2', name: 'Zubaida Tahir', email: 'zubaida.tahir@dreamteam.org', phone: '+234 803 222 3344', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-47', cohortId: 'dtp-cohort-2', name: 'Sunday Akpan', email: 'sunday.akpan@dreamteam.org', phone: '+234 816 555 6677', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-48', cohortId: 'dtp-cohort-2', name: 'Eniola Shonibare', email: 'eniola.shonibare@dreamteam.org', phone: '+234 908 888 9900', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-49', cohortId: 'dtp-cohort-2', name: 'Godwin Onyeka', email: 'godwin.onyeka@dreamteam.org', phone: '+234 709 111 2233', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-50', cohortId: 'dtp-cohort-2', name: 'Rabiya Dahiru', email: 'rabiya.dahiru@dreamteam.org', phone: '+234 807 444 5566', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-51', cohortId: 'dtp-cohort-2', name: 'Adewale Johnson', email: 'adewale.johnson@dreamteam.org', phone: '+234 811 000 1122', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-52', cohortId: 'dtp-cohort-2', name: 'Adaobi Mbah', email: 'adaobi.mbah@dreamteam.org', phone: '+234 904 333 4455', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-53', cohortId: 'dtp-cohort-2', name: 'Salisu Mukhtar', email: 'salisu.mukhtar@dreamteam.org', phone: '+234 707 666 7788', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-54', cohortId: 'dtp-cohort-2', name: 'Funmilayo Adesina', email: 'funmilayo.adesina@dreamteam.org', phone: '+234 819 999 0011', status: 'active', registeredAt: '2026-09-01' },
-  { id: 'stu-55', cohortId: 'dtp-cohort-2', name: 'Chukwuebuka Madu', email: 'ebuka.madu@dreamteam.org', phone: '+234 801 222 3344', status: 'active', registeredAt: '2026-09-01' },
-];
+export const DEFAULT_55_STUDENTS: Student[] = [];
 
 export const DEFAULT_COHORTS: Cohort[] = [
   {
     id: 'dtp-cohort-2',
     name: 'Dream Team Project: Cohort 2',
     codePrefix: 'DTP2',
-    description: 'Premier leadership, engineering and high performance track (55 Enrolled)',
-    startDate: '2026-09-01',
-    endDate: '2026-12-15',
+    description: 'Active Cohort Track',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: '',
     isActive: true,
-    meetingLinkDefault: 'https://meet.google.com/dtp-cohort2-live',
-  },
-  {
-    id: 'dtp-cohort-1',
-    name: 'Dream Team Project: Cohort 1 (Alumni)',
-    codePrefix: 'DTP1',
-    description: 'Inaugural cohort graduated with excellence',
-    startDate: '2026-01-10',
-    endDate: '2026-05-30',
-    isActive: false,
     meetingLinkDefault: '',
   }
 ];
 
-export const DEFAULT_CLASSES: ClassSession[] = [
-  {
-    id: 'cls-201',
-    cohortId: 'dtp-cohort-2',
-    title: 'Advanced System Architecture & Cloud Scale',
-    instructorName: 'Engr. Kehinde Ogungbade',
-    date: '2026-10-04',
-    time: '18:00 - 20:00 WAT',
-    code: 'CATALYST', // Live Secret Word
-    isAttendanceOpen: true,
-    attendanceWindowMinutes: 120,
-    meetingUrl: 'https://meet.google.com/dtp-cohort2-live',
-    notes: 'Secret class attendance code for today: CATALYST',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'cls-202',
-    cohortId: 'dtp-cohort-2',
-    title: 'Saturday Masterclass: High Performance Systems',
-    instructorName: 'Lead Facilitator Alex',
-    date: '2026-10-03',
-    time: '10:00 - 13:00 WAT',
-    code: 'VELOCITY',
-    isAttendanceOpen: true,
-    attendanceWindowMinutes: 180,
-    meetingUrl: 'https://meet.google.com/dtp-cohort2-live',
-    notes: 'Secret class attendance code: VELOCITY',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 'cls-200',
-    cohortId: 'dtp-cohort-2',
-    title: 'Cohort 2 Kickoff & Orientation',
-    instructorName: 'Dream Team Leadership',
-    date: '2026-09-08',
-    time: '17:00 - 19:00 WAT',
-    code: 'HORIZON',
-    isAttendanceOpen: false,
-    attendanceWindowMinutes: 90,
-    meetingUrl: 'https://meet.google.com/dtp-cohort2-live',
-    notes: 'Orientation code was HORIZON',
-    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-  },
-];
+export const DEFAULT_CLASSES: ClassSession[] = [];
 
 export const DEFAULT_ATTENDANCE: AttendanceRecord[] = [];
 
@@ -140,7 +31,7 @@ interface PersistentSchema {
   version: number;
 }
 
-const STORAGE_KEY = 'dtp_cloud_persistent_db_v3_prod';
+const STORAGE_KEY = 'dtp_clean_prod_v5';
 
 export class PersistentDataStore {
   private static instance: PersistentDataStore;
@@ -163,22 +54,22 @@ export class PersistentDataStore {
     }
 
     try {
-      // Clean up legacy test keys if present
+      // Purge all legacy test datasets
       localStorage.removeItem('dtp_cloud_persistent_db_v1');
       localStorage.removeItem('dtp_cloud_persistent_db_v2');
+      localStorage.removeItem('dtp_cloud_persistent_db_v3_prod');
 
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Ensure arrays exist
         return {
           cohorts: parsed.cohorts?.length ? parsed.cohorts : DEFAULT_COHORTS,
-          classes: parsed.classes?.length ? parsed.classes : DEFAULT_CLASSES,
-          students: parsed.students?.length ? parsed.students : DEFAULT_55_STUDENTS,
+          classes: parsed.classes || [],
+          students: parsed.students || [],
           attendance: parsed.attendance || [],
           campaigns: parsed.campaigns || [],
           importedFiles: parsed.importedFiles || [],
-          version: parsed.version || 3,
+          version: parsed.version || 5,
         };
       }
     } catch (e) {
@@ -193,13 +84,20 @@ export class PersistentDataStore {
   private getDefaults(): PersistentSchema {
     return {
       cohorts: DEFAULT_COHORTS,
-      classes: DEFAULT_CLASSES,
-      students: DEFAULT_55_STUDENTS,
+      classes: [],
+      students: [],
       attendance: [],
       campaigns: [],
       importedFiles: [],
-      version: 3,
+      version: 5,
     };
+  }
+
+  public resetAllData(): PersistentSchema {
+    const defaults = this.getDefaults();
+    this.data = defaults;
+    this.saveToStorage(defaults);
+    return defaults;
   }
 
   private saveToStorage(data: PersistentSchema) {
@@ -385,7 +283,7 @@ export class PersistentDataStore {
       code: (classData.code || 'CATALYST').toUpperCase().trim(),
       isAttendanceOpen: classData.isAttendanceOpen !== undefined ? classData.isAttendanceOpen : true,
       attendanceWindowMinutes: classData.attendanceWindowMinutes || 120,
-      meetingUrl: classData.meetingUrl || 'https://meet.google.com/dtp-cohort2-live',
+      meetingUrl: classData.meetingUrl || '',
       notes: classData.notes || '',
       createdAt: new Date().toISOString(),
     };
@@ -393,6 +291,14 @@ export class PersistentDataStore {
     this.data.classes.unshift(newClass);
     this.saveToStorage(this.data);
     return newClass;
+  }
+
+  public deleteClass(id: string): boolean {
+    const index = this.data.classes.findIndex(c => c.id === id);
+    if (index === -1) return false;
+    this.data.classes.splice(index, 1);
+    this.saveToStorage(this.data);
+    return true;
   }
 
   public toggleClassAttendance(classId: string, isOpen?: boolean): ClassSession {
