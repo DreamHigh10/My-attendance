@@ -244,56 +244,10 @@ const db = {
 
   students: preloaded55Cohort2Members,
 
-  attendance: [
-    {
-      id: 'att-200-01',
-      classId: 'cls-200',
-      cohortId: 'dtp-cohort-2',
-      studentEmail: 'ogungbadekehinde19@gmail.com',
-      studentName: 'Ogunbade Kehinde',
-      studentPhone: '+234 800 123 4567',
-      status: 'present',
-      markedAt: '2026-09-08T17:04:10.000Z',
-      classCodeUsed: 'HORIZON',
-      feedback: 'Great kickoff orientation!',
-    },
-    {
-      id: 'att-200-02',
-      classId: 'cls-200',
-      cohortId: 'dtp-cohort-2',
-      studentEmail: 'emmanuel.adeyemi@dreamteam.org',
-      studentName: 'Emmanuel Adeyemi',
-      studentPhone: '+234 803 123 4567',
-      status: 'present',
-      markedAt: '2026-09-08T17:05:22.000Z',
-      classCodeUsed: 'HORIZON',
-    },
-    {
-      id: 'att-200-03',
-      classId: 'cls-200',
-      cohortId: 'dtp-cohort-2',
-      studentEmail: 'chioma.okafor@dreamteam.org',
-      studentName: 'Chioma Okafor',
-      studentPhone: '+234 812 987 6543',
-      status: 'present',
-      markedAt: '2026-09-08T17:06:45.000Z',
-      classCodeUsed: 'HORIZON',
-    },
-  ] as AttendanceRecordData[],
+  attendance: [] as AttendanceRecordData[],
 
   campaigns: [] as EmailCampaignData[],
-  importedFiles: [
-    {
-      id: 'file-init-01',
-      fileName: 'DreamTeam_Cohort2_Master_Roster_55.xlsx',
-      fileSize: 45200,
-      recordsCount: 55,
-      cohortId: 'dtp-cohort-2',
-      uploadedAt: '2026-09-01T09:00:00.000Z',
-      uploadedBy: 'Engr. Kehinde Ogungbade',
-      studentIds: preloaded55Cohort2Members.map(s => s.id),
-    }
-  ] as ImportedFileData[],
+  importedFiles: [] as ImportedFileData[],
 };
 
 // ---------------- API ROUTES ---------------- //

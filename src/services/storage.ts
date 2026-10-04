@@ -126,43 +126,9 @@ export const DEFAULT_CLASSES: ClassSession[] = [
   },
 ];
 
-export const DEFAULT_ATTENDANCE: AttendanceRecord[] = [
-  {
-    id: 'att-200-01',
-    classId: 'cls-200',
-    cohortId: 'dtp-cohort-2',
-    studentEmail: 'emmanuel.adeyemi@dreamteam.org',
-    studentName: 'Emmanuel Adeyemi',
-    studentPhone: '+234 803 123 4567',
-    status: 'present',
-    markedAt: '2026-09-08T17:05:12.000Z',
-    classCodeUsed: 'HORIZON',
-  },
-  {
-    id: 'att-200-02',
-    classId: 'cls-200',
-    cohortId: 'dtp-cohort-2',
-    studentEmail: 'ogungbadekehinde19@gmail.com',
-    studentName: 'Engr. Kehinde Ogungbade',
-    studentPhone: '+234 800 000 0000',
-    status: 'present',
-    markedAt: '2026-09-08T17:02:10.000Z',
-    classCodeUsed: 'HORIZON',
-  },
-];
+export const DEFAULT_ATTENDANCE: AttendanceRecord[] = [];
 
-export const DEFAULT_IMPORTED_FILES: ImportedFileLog[] = [
-  {
-    id: 'file-init-01',
-    fileName: 'DreamTeam_Cohort2_Master_Roster_55.xlsx',
-    fileSize: 45200,
-    recordsCount: 55,
-    cohortId: 'dtp-cohort-2',
-    uploadedAt: '2026-09-01T09:00:00.000Z',
-    uploadedBy: 'Engr. Kehinde Ogungbade',
-    studentIds: DEFAULT_55_STUDENTS.map(s => s.id),
-  }
-];
+export const DEFAULT_IMPORTED_FILES: ImportedFileLog[] = [];
 
 interface PersistentSchema {
   cohorts: Cohort[];
@@ -174,7 +140,7 @@ interface PersistentSchema {
   version: number;
 }
 
-const STORAGE_KEY = 'dtp_cloud_persistent_db_v2';
+const STORAGE_KEY = 'dtp_cloud_persistent_db_v3_prod';
 
 export class PersistentDataStore {
   private static instance: PersistentDataStore;
@@ -197,6 +163,10 @@ export class PersistentDataStore {
     }
 
     try {
+      // Clean up legacy test keys if present
+      localStorage.removeItem('dtp_cloud_persistent_db_v1');
+      localStorage.removeItem('dtp_cloud_persistent_db_v2');
+
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -205,10 +175,10 @@ export class PersistentDataStore {
           cohorts: parsed.cohorts?.length ? parsed.cohorts : DEFAULT_COHORTS,
           classes: parsed.classes?.length ? parsed.classes : DEFAULT_CLASSES,
           students: parsed.students?.length ? parsed.students : DEFAULT_55_STUDENTS,
-          attendance: parsed.attendance || DEFAULT_ATTENDANCE,
+          attendance: parsed.attendance || [],
           campaigns: parsed.campaigns || [],
-          importedFiles: parsed.importedFiles || DEFAULT_IMPORTED_FILES,
-          version: parsed.version || 2,
+          importedFiles: parsed.importedFiles || [],
+          version: parsed.version || 3,
         };
       }
     } catch (e) {
@@ -225,10 +195,10 @@ export class PersistentDataStore {
       cohorts: DEFAULT_COHORTS,
       classes: DEFAULT_CLASSES,
       students: DEFAULT_55_STUDENTS,
-      attendance: DEFAULT_ATTENDANCE,
+      attendance: [],
       campaigns: [],
-      importedFiles: DEFAULT_IMPORTED_FILES,
-      version: 2,
+      importedFiles: [],
+      version: 3,
     };
   }
 
