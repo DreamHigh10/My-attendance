@@ -1,0 +1,111 @@
+{
+  "entities": {
+    "Cohort": {
+      "title": "Cohort",
+      "description": "A Dream Team Project training cohort",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "codePrefix": { "type": "string" },
+        "description": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "meetingLinkDefault": { "type": "string" }
+      },
+      "required": ["id", "name", "codePrefix", "isActive"]
+    },
+    "ClassSession": {
+      "title": "ClassSession",
+      "description": "A scheduled class session with unique secret attendance code",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cohortId": { "type": "string" },
+        "title": { "type": "string" },
+        "instructorName": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "code": { "type": "string" },
+        "isAttendanceOpen": { "type": "boolean" },
+        "attendanceWindowMinutes": { "type": "number" },
+        "meetingUrl": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "cohortId", "title", "date", "code", "isAttendanceOpen"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "An enrolled cohort participant whose email is authorized to mark attendance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cohortId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "status": { "type": "string" },
+        "registeredAt": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "cohortId", "name", "email"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "A verified attendance entry marked with secret code",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "classId": { "type": "string" },
+        "cohortId": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentPhone": { "type": "string" },
+        "status": { "type": "string" },
+        "markedAt": { "type": "string" },
+        "classCodeUsed": { "type": "string" },
+        "feedback": { "type": "string" }
+      },
+      "required": ["id", "classId", "cohortId", "studentEmail", "studentName", "markedAt", "classCodeUsed"]
+    },
+    "UploadedRosterFile": {
+      "title": "UploadedRosterFile",
+      "description": "Metadata for an uploaded Excel/CSV roster file stored in Firebase",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fileName": { "type": "string" },
+        "uploadedAt": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "recordsCount": { "type": "number" },
+        "fileSize": { "type": "number" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "fileName", "uploadedAt", "recordsCount"]
+    }
+  },
+  "firestore": {
+    "/cohorts/{cohortId}": {
+      "schema": "Cohort",
+      "description": "Training cohorts"
+    },
+    "/classes/{classId}": {
+      "schema": "ClassSession",
+      "description": "Scheduled class sessions"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Enrolled student directory"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "AttendanceRecord",
+      "description": "Attendance check-in logs"
+    },
+    "/uploaded_files/{fileId}": {
+      "schema": "UploadedRosterFile",
+      "description": "Uploaded CSV / Excel roster logs"
+    }
+  }
+}

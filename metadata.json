@@ -1,0 +1,6 @@
+{
+  "name": "Dream Team Project - Attendance & Cohort Hub",
+  "description": "Comprehensive class attendance tracker, cohort management, unique verification code system, and AI-powered personalized email automation for Dream Team Project cohorts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    match /cohorts/{cohortId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /students/{studentId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isSignedIn();
+    }
+
+    match /uploaded_files/{fileId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
