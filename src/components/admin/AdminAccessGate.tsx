@@ -74,17 +74,6 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
     }
   };
 
-  const handleQuickSelectAdmin = (adminEmail: string) => {
-    const name = adminEmail.includes('ogungbade')
-      ? 'Engr. Kehinde Ogungbade'
-      : adminEmail.includes('aduoluwaseyi')
-      ? 'Adu Oluwaseyi'
-      : adminEmail.includes('paulstanley')
-      ? 'Paul Stanley Tobechukwu'
-      : 'Chiemela B.';
-    onAdminAuthenticated(adminEmail, name);
-  };
-
   return (
     <div className="max-w-xl mx-auto px-4 py-8 sm:py-14 animate-fade-in">
       <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden backdrop-blur-md text-center">
@@ -172,7 +161,7 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
               <input
                 type="email"
                 required
-                placeholder="e.g. Ogungbadekehinde19@gmail.com"
+                placeholder="e.g. facilitator@dreamteam.org"
                 value={inputEmail}
                 onChange={(e) => setInputEmail(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-300 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:border-indigo-600 pl-10"
@@ -189,31 +178,6 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        {/* Authorized Facilitator Quick Badges */}
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left">
-          <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-2">
-            Authorized Facilitator Accounts (Click to quick-auth):
-          </span>
-          <div className="space-y-1.5">
-            {AUTHORIZED_ADMIN_EMAILS.map((email) => (
-              <button
-                key={email}
-                type="button"
-                onClick={() => handleQuickSelectAdmin(email)}
-                className="w-full flex items-center justify-between p-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-xs font-bold text-slate-800 transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <span className="truncate font-mono">{email}</span>
-                </div>
-                <span className="text-[10px] text-indigo-600 font-extrabold opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  Select &rarr;
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Return Button */}
         <div className="mt-6 pt-4 border-t border-slate-100">

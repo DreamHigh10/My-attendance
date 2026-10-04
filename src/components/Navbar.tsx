@@ -4,7 +4,6 @@ import {
   ShieldCheck, 
   Layers, 
   LogOut,
-  Flame,
   Radio
 } from 'lucide-react';
 import { Cohort } from '../types';
@@ -40,14 +39,9 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
-          {/* Authentic Dream Team Logo */}
+          {/* Authentic Dream Team Logo (Clean without the badge) */}
           <div className="flex items-center gap-3">
             <DreamTeamLogo size="md" showText={true} />
-            
-            <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-50 text-amber-800 border border-amber-200">
-              <Flame className="w-3.5 h-3.5 text-amber-500" />
-              Firebase Cloud Live
-            </span>
           </div>
 
           {/* Controls & Nav */}

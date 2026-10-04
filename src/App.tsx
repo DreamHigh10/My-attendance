@@ -6,6 +6,7 @@ import { Cohort, ClassSession, Student, AttendanceRecord, EmailCampaign } from '
 import { api } from './services/api';
 import { firebaseAuth } from './services/firebase';
 import { ArchitecturalBackground } from './components/common/ArchitecturalBackground';
+import { GoogleAuthModal } from './components/common/GoogleAuthModal';
 import { RefreshCw, GraduationCap, Sparkles } from 'lucide-react';
 
 export default function App() {
@@ -18,6 +19,8 @@ export default function App() {
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
 
   // Authenticated user state
   const [currentUser, setCurrentUser] = useState<{ email: string; name: string; photoURL?: string; isGoogleAuth?: boolean } | null>(null);
@@ -80,6 +83,7 @@ export default function App() {
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
+    setAuthErrorMessage(null);
     try {
       const user = await firebaseAuth.signInWithGoogle();
       if (user && user.email) {
@@ -91,11 +95,30 @@ export default function App() {
         });
         localStorage.setItem('dtp_student_email', user.email);
       }
-    } catch (err) {
-      console.error('Google login failed:', err);
+    } catch (err: any) {
+      console.warn('Google popup auth note:', err);
+      const code = err?.code || '';
+      let msg = 'Google popup was blocked or requires domain authorization.';
+      if (code === 'auth/unauthorized-domain') {
+        msg = 'Preview domain is not yet on your Firebase Authorized Domains list.';
+      } else if (code === 'auth/popup-blocked') {
+        msg = 'Browser blocked the popup window.';
+      }
+      setAuthErrorMessage(msg);
+      setIsGoogleModalOpen(true);
     } finally {
       setIsSigningIn(false);
     }
+  };
+
+  const handleSelectGoogleAccount = (email: string, name: string) => {
+    setCurrentUser({
+      email,
+      name,
+      isGoogleAuth: true,
+    });
+    localStorage.setItem('dtp_student_email', email);
+    setIsGoogleModalOpen(false);
   };
 
   const handleSignOut = async () => {
@@ -175,6 +198,15 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Google Sign-in Modal Fallback */}
+      <GoogleAuthModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        onSelectAccount={handleSelectGoogleAccount}
+        suggestedEmail="ogungbadekehinde19@gmail.com"
+        errorMessage={authErrorMessage}
+      />
 
       {/* Modern Footer */}
       <footer className="border-t border-slate-200/80 bg-white/70 backdrop-blur-md py-6 text-center text-xs text-slate-500">
