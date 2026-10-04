@@ -192,11 +192,12 @@ export const EmailAutomationHub: React.FC<EmailAutomationHubProps> = ({
     phone: '+234 800 000 0000',
   };
 
-  const renderPersonalizedText = (text: string) => {
+  const renderPersonalizedText = (text: string, customRec?: { name: string; email: string; phone?: string }) => {
+    const target = customRec || currentRecipient;
     return text
-      .replace(/\{name\}/gi, currentRecipient.name)
-      .replace(/\{email\}/gi, currentRecipient.email)
-      .replace(/\{phone\}/gi, currentRecipient.phone || 'N/A')
+      .replace(/\{name\}/gi, target.name)
+      .replace(/\{email\}/gi, target.email)
+      .replace(/\{phone\}/gi, target.phone || 'N/A')
       .replace(/\{cohort\}/gi, selectedCohort?.name || 'Dream Team Project')
       .replace(/\{class_title\}/gi, classTitle)
       .replace(/\{class_code\}/gi, classCode);
@@ -463,14 +464,35 @@ export const EmailAutomationHub: React.FC<EmailAutomationHubProps> = ({
               </div>
 
               <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('preview')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>Preview with Dynamic Names</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('preview')}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>Preview Individual Emails</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={recipients.length === 0}
+                    onClick={() => {
+                      if (recipients.length === 0) return;
+                      const bccList = recipients.map(r => r.email).join(',');
+                      const sampleRecipient = recipients[0] || { name: 'Member', email: '' };
+                      const renderedSub = encodeURIComponent(renderPersonalizedText(subject, sampleRecipient));
+                      const renderedTxt = encodeURIComponent(renderPersonalizedText(templateBody, sampleRecipient));
+                      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&bcc=${bccList}&su=${renderedSub}&body=${renderedTxt}`;
+                      window.open(gmailUrl, '_blank');
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer"
+                    title="Open in Gmail with all recipients in BCC"
+                  >
+                    <Mail className="w-4 h-4 text-rose-600" />
+                    <span>Open in Gmail (BCC)</span>
+                  </button>
+                </div>
 
                 <button
                   type="button"
