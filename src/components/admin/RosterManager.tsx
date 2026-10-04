@@ -152,16 +152,27 @@ export const RosterManager: React.FC<RosterManagerProps> = ({
 
         const mapped = rawJson.map((row) => {
           const keys = Object.keys(row);
-          const nameKey = keys.find((k) => /name|full_name|student|participant/i.test(k)) || keys[0];
-          const emailKey = keys.find((k) => /email|mail|e-mail/i.test(k)) || keys[1];
-          const phoneKey = keys.find((k) => /phone|mobile|tel|contact|whatsapp/i.test(k));
+          
+          // Check for separate first and last name columns
+          const firstNameKey = keys.find((k) => /first.*name|fname/i.test(k));
+          const lastNameKey = keys.find((k) => /last.*name|surname|lname/i.test(k));
+          const nameKey = keys.find((k) => /^(full_?)?name|student|participant|member/i.test(k)) || keys[0];
 
-          const rawName = String(row[nameKey || ''] || '').trim();
+          let rawName = '';
+          if (firstNameKey && lastNameKey) {
+            rawName = `${row[firstNameKey] || ''} ${row[lastNameKey] || ''}`.trim();
+          } else {
+            rawName = String(row[nameKey || ''] || '').trim();
+          }
+
+          const emailKey = keys.find((k) => /email|e-?mail|contact.*email/i.test(k)) || keys.find((k) => String(row[k]).includes('@')) || keys[1];
+          const phoneKey = keys.find((k) => /phone|mobile|tel|whatsapp|contact.*num/i.test(k));
+
           const rawEmail = String(row[emailKey || ''] || '').trim().toLowerCase();
           const rawPhone = phoneKey ? String(row[phoneKey]).trim() : '';
 
           return {
-            name: rawName,
+            name: rawName || rawEmail.split('@')[0],
             email: rawEmail,
             phone: rawPhone,
           };
