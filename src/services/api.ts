@@ -345,7 +345,7 @@ export const api = {
     // Built-in intelligent template fallback
     return {
       subject: `[${payload.cohortName || 'Dream Team Project'}] Live Class Attendance & Updates: ${payload.classTitle || 'Masterclass'}`,
-      body: `Hello {{name}},\n\nThis is an official communication regarding ${payload.classTitle || 'our live class session'}.\n\n📅 Class: ${payload.classTitle || 'Cohort 2 Masterclass'}\n🔑 Attendance Code: ${payload.classCode || 'CATALYST'}\n\nPlease mark your attendance promptly.\n\nBest regards,\nEngr. Kehinde Ogungbade & The Dream Team Leadership`,
+      body: `Hello {name},\n\nThis is an official communication regarding ${payload.classTitle || 'our live class session'}.\n\n📅 Class: ${payload.classTitle || 'Cohort 2 Masterclass'}\n🔑 Attendance Code: ${payload.classCode || 'CATALYST'}\n\nPlease mark your attendance promptly.\n\nBest regards,\nEngr. Kehinde Ogungbade & The Dream Team Leadership`,
     };
   },
 
@@ -383,8 +383,8 @@ export const api = {
         recipientName: r.name,
         recipientEmail: r.email,
         status: 'delivered',
-        renderedSubject: payload.subject.replace(/{{name}}/g, r.name),
-        renderedBody: payload.templateBody.replace(/{{name}}/g, r.name),
+        renderedSubject: payload.subject.replace(/\{name\}/gi, r.name),
+        renderedBody: payload.templateBody.replace(/\{name\}/gi, r.name),
         timestamp: new Date().toISOString(),
       })),
     };

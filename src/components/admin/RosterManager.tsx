@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
+import confetti from 'canvas-confetti';
 import { 
   Users, 
   UserPlus, 
@@ -139,7 +140,7 @@ export const RosterManager: React.FC<RosterManagerProps> = ({
     reader.onload = (evt) => {
       try {
         const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wb = XLSX.read(bstr, { type: 'array' });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const rawJson: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
@@ -189,7 +190,7 @@ export const RosterManager: React.FC<RosterManagerProps> = ({
         setError('Could not parse file. Please upload a valid CSV, TSV, or Excel (.xlsx / .xls) file.');
       }
     };
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,6 +238,13 @@ export const RosterManager: React.FC<RosterManagerProps> = ({
       setUploadedFileMeta(null);
       await loadImportedFiles();
       onRefresh();
+
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#10b981', '#8b5cf6'],
+      });
 
       setTimeout(() => {
         setIsImportModalOpen(false);
