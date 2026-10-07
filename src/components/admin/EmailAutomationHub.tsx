@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
+import confetti from 'canvas-confetti';
 import { 
   Mail, 
   Sparkles, 
@@ -239,6 +240,14 @@ export const EmailAutomationHub: React.FC<EmailAutomationHubProps> = ({
         `✓ ${res.message} Dispatched from sender: ${senderEmail}`
       );
       onRefresh();
+
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#10b981', '#8b5cf6'],
+      });
+
       setTimeout(() => {
         setActiveTab('history');
       }, 1500);
