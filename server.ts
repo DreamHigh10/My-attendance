@@ -504,50 +504,6 @@ app.post('/api/students', (req: Request, res: Response) => {
 });
 
 app.post('/api/students/bulk-import', (req: Request, res: Response) => {
-  const { cohortId, students } = req.body;
-  if (!cohortId || !Array.isArray(students) || students.length === 0) {
-    return res.status(400).json({ error: 'Valid cohortId and array of students are required.' });
-  }
-
-  let addedCount = 0;
-  let updatedCount = 0;
-
-  for (const s of students) {
-    if (!s.email || !s.name) continue;
-    const cleanEmail = String(s.email).toLowerCase().trim();
-    const cleanName = String(s.name).trim();
-    const cleanPhone = s.phone ? String(s.phone).trim() : '';
-
-    const existingIndex = db.students.findIndex(x => x.email.toLowerCase() === cleanEmail && x.cohortId === cohortId);
-    if (existingIndex >= 0) {
-      db.students[existingIndex].name = cleanName;
-      if (cleanPhone) db.students[existingIndex].phone = cleanPhone;
-      updatedCount++;
-    } else {
-      db.students.push({
-        id: `stu-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        cohortId,
-        name: cleanName,
-        email: cleanEmail,
-        phone: cleanPhone,
-        status: 'active',
-        registeredAt: new Date().toISOString().split('T')[0],
-        notes: s.notes || 'Imported via upload',
-      });
-      addedCount++;
-    }
-  }
-
-  res.json({ 
-    success: true, 
-    message: `Roster updated: ${addedCount} new members added, ${updatedCount} updated. Total cohort roster is now ${db.students.filter(s => s.cohortId === cohortId).length} members.`,
-    addedCount,
-    updatedCount,
-    totalCohortStudents: db.students.filter(s => s.cohortId === cohortId).length
-  });
-});
-
-app.post('/api/students/bulk-import', (req: Request, res: Response) => {
   const { cohortId, students, fileName, fileSize, uploadedBy } = req.body;
   if (!cohortId || !Array.isArray(students) || students.length === 0) {
     return res.status(400).json({ error: 'Valid cohortId and array of students are required.' });

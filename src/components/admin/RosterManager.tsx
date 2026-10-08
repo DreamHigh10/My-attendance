@@ -223,15 +223,6 @@ export const RosterManager: React.FC<RosterManagerProps> = ({
         fileSize,
         uploadedBy: 'Admin Facilitator',
       });
-      
-      // Store upload log in Firebase
-      await firebaseStorage.uploadRosterFileLog({
-        fileName,
-        fileSize,
-        recordsCount: parsedRows.length,
-        uploadedBy: 'Admin Facilitator',
-        students: parsedRows,
-      });
 
       setUploadSuccessMessage(res.message);
       setParsedRows([]);

@@ -2,42 +2,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128;
-    }
-
     match /cohorts/{cohortId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /classes/{classId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /students/{studentId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /attendance/{attendanceId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /uploaded_files/{fileId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
+    }
+
+    match /campaigns/{campaignId} {
+      allow read, write: if true;
     }
 
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }
