@@ -4,7 +4,8 @@ import { StudentPortal } from './components/StudentPortal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Cohort, ClassSession, Student, AttendanceRecord, EmailCampaign } from './types';
 import { api } from './services/api';
-import { firebaseAuth } from './services/firebase';
+import { firebaseAuth, firebaseDb } from './services/firebase';
+import { persistentStore } from './services/storage';
 import { ArchitecturalBackground } from './components/common/ArchitecturalBackground';
 import { GoogleAuthModal } from './components/common/GoogleAuthModal';
 import { parseCurrentRoute, navigateTo, AppView, AdminTab } from './utils/navigation';
@@ -89,12 +90,21 @@ export default function App() {
         api.getCampaigns(),
       ]);
 
+      let finalStudents = fetchedStudents;
+      if (fetchedStudents.length === 0) {
+        const localStudents = persistentStore.getStudents(selectedCohortId);
+        if (localStudents.length > 0) {
+          finalStudents = localStudents;
+          firebaseDb.syncStudentsToFirestore(selectedCohortId || 'dtp-cohort-2', localStudents).catch(() => {});
+        }
+      }
+
       setCohorts(fetchedCohorts);
       if (fetchedCohorts.length > 0 && !selectedCohortId) {
         setSelectedCohortId(fetchedCohorts[0].id);
       }
       setClasses(fetchedClasses);
-      setStudents(fetchedStudents);
+      setStudents(finalStudents);
       setCampaigns(fetchedCampaigns);
 
       // Fetch all attendance records across classes

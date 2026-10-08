@@ -294,7 +294,11 @@ export const api = {
 
   async addStudent(student: Partial<Student>): Promise<Student> {
     const newStudent = persistentStore.addStudent(student);
-    firebaseDb.syncStudentsToFirestore(newStudent.cohortId, [newStudent]).catch(() => {});
+    try {
+      await firebaseDb.syncStudentsToFirestore(newStudent.cohortId, [newStudent]);
+    } catch (err) {
+      console.warn('Firebase student sync warning:', err);
+    }
     safeFetchJson('/api/students', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -308,21 +312,19 @@ export const api = {
     students: any[], 
     meta?: { fileName?: string; fileSize?: number; uploadedBy?: string }
   ): Promise<any> {
-    // 1. Commit locally immediately so UI is instantaneous and never hangs
+    // 1. Commit locally immediately
     const localResult = persistentStore.bulkImportStudents(cohortId, students, meta);
     const allCohortStudents = persistentStore.getStudents(cohortId);
 
-    // 2. Sync to Cloud Firestore asynchronously with non-blocking promises
-    (async () => {
-      try {
-        await firebaseDb.syncStudentsToFirestore(cohortId, allCohortStudents);
-        if (localResult.fileRecord) {
-          await firebaseDb.saveUploadedFileToFirestore(localResult.fileRecord);
-        }
-      } catch (err) {
-        console.warn('Background Firestore sync notice:', err);
+    // 2. Sync to Cloud Firestore globally across devices
+    try {
+      await firebaseDb.syncStudentsToFirestore(cohortId, allCohortStudents);
+      if (localResult.fileRecord) {
+        await firebaseDb.saveUploadedFileToFirestore(localResult.fileRecord);
       }
-    })();
+    } catch (err) {
+      console.warn('Cloud Firestore sync notice:', err);
+    }
 
     // 3. Sync to backend API if available
     safeFetchJson('/api/students/bulk-import', {
