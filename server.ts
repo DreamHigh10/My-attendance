@@ -504,50 +504,6 @@ app.post('/api/students', (req: Request, res: Response) => {
 });
 
 app.post('/api/students/bulk-import', (req: Request, res: Response) => {
-  const { cohortId, students } = req.body;
-  if (!cohortId || !Array.isArray(students) || students.length === 0) {
-    return res.status(400).json({ error: 'Valid cohortId and array of students are required.' });
-  }
-
-  let addedCount = 0;
-  let updatedCount = 0;
-
-  for (const s of students) {
-    if (!s.email || !s.name) continue;
-    const cleanEmail = String(s.email).toLowerCase().trim();
-    const cleanName = String(s.name).trim();
-    const cleanPhone = s.phone ? String(s.phone).trim() : '';
-
-    const existingIndex = db.students.findIndex(x => x.email.toLowerCase() === cleanEmail && x.cohortId === cohortId);
-    if (existingIndex >= 0) {
-      db.students[existingIndex].name = cleanName;
-      if (cleanPhone) db.students[existingIndex].phone = cleanPhone;
-      updatedCount++;
-    } else {
-      db.students.push({
-        id: `stu-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        cohortId,
-        name: cleanName,
-        email: cleanEmail,
-        phone: cleanPhone,
-        status: 'active',
-        registeredAt: new Date().toISOString().split('T')[0],
-        notes: s.notes || 'Imported via upload',
-      });
-      addedCount++;
-    }
-  }
-
-  res.json({ 
-    success: true, 
-    message: `Roster updated: ${addedCount} new members added, ${updatedCount} updated. Total cohort roster is now ${db.students.filter(s => s.cohortId === cohortId).length} members.`,
-    addedCount,
-    updatedCount,
-    totalCohortStudents: db.students.filter(s => s.cohortId === cohortId).length
-  });
-});
-
-app.post('/api/students/bulk-import', (req: Request, res: Response) => {
   const { cohortId, students, fileName, fileSize, uploadedBy } = req.body;
   if (!cohortId || !Array.isArray(students) || students.length === 0) {
     return res.status(400).json({ error: 'Valid cohortId and array of students are required.' });
@@ -703,6 +659,35 @@ app.get('/api/stats', (req: Request, res: Response) => {
       activeClass: filteredClasses.find(c => c.isAttendanceOpen),
     },
   });
+});
+
+app.get('/api/leaderboard', (req: Request, res: Response) => {
+  const cohortId = req.query.cohortId as string;
+  let filteredStudents = db.students;
+  let filteredAttendance = db.attendance;
+
+  if (cohortId) {
+    filteredStudents = filteredStudents.filter(s => s.cohortId === cohortId);
+    filteredAttendance = filteredAttendance.filter(a => a.cohortId === cohortId);
+  }
+
+  const attendanceCountByEmail: Record<string, number> = {};
+  filteredAttendance.forEach(a => {
+    const email = a.studentEmail.toLowerCase();
+    attendanceCountByEmail[email] = (attendanceCountByEmail[email] || 0) + 1;
+  });
+
+  const leaderboard = filteredStudents.map(student => ({
+    id: student.id,
+    name: student.name,
+    email: student.email,
+    attendedClasses: attendanceCountByEmail[student.email.toLowerCase()] || 0,
+  }))
+  .filter(student => student.attendedClasses > 0)
+  .sort((a, b) => b.attendedClasses - a.attendedClasses)
+  .slice(0, 10); // Top 10
+
+  res.json({ success: true, leaderboard });
 });
 
 // 7. AI Email Generator with Gemini 3.8 Flash

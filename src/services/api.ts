@@ -306,6 +306,31 @@ export const api = {
   },
 
   // Stats
+  async getLeaderboard(cohortId?: string): Promise<any[]> {
+    const url = cohortId ? `/api/leaderboard?cohortId=${cohortId}` : '/api/leaderboard';
+    const { ok, data } = await safeFetchJson(url);
+    if (ok && data?.leaderboard) return data.leaderboard;
+
+    // Fallback persistent computation
+    const students = persistentStore.getStudents(cohortId);
+    const attendance = persistentStore.getAttendance();
+    const attendanceCountByEmail: Record<string, number> = {};
+    attendance.forEach(a => {
+      const email = a.studentEmail.toLowerCase();
+      attendanceCountByEmail[email] = (attendanceCountByEmail[email] || 0) + 1;
+    });
+
+    return students.map(student => ({
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      attendedClasses: attendanceCountByEmail[student.email.toLowerCase()] || 0,
+    }))
+    .filter(student => student.attendedClasses > 0)
+    .sort((a, b) => b.attendedClasses - a.attendedClasses)
+    .slice(0, 10);
+  },
+
   async getStats(cohortId?: string): Promise<any> {
     const url = cohortId ? `/api/stats?cohortId=${cohortId}` : '/api/stats';
     const { ok, data } = await safeFetchJson(url);

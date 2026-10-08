@@ -66,9 +66,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
   // Active Classes
   const [activeClasses, setActiveClasses] = useState<ClassSession[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
   useEffect(() => {
     loadActiveClasses();
+    loadLeaderboard();
   }, [selectedCohortId]);
 
   useEffect(() => {
@@ -84,6 +86,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       setActiveClasses(active);
     } catch (err) {
       console.error('Error fetching classes:', err);
+    }
+  };
+
+  const loadLeaderboard = async () => {
+    try {
+      const lb = await api.getLeaderboard(selectedCohortId);
+      setLeaderboard(lb);
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err);
     }
   };
 
@@ -201,6 +212,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     setErrorMessage(null);
     setFeedback('');
     loadActiveClasses();
+    loadLeaderboard();
     if (emailInput) handleLookupStudent(emailInput);
   };
 
@@ -518,6 +530,42 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
           </form>
 
+        </div>
+      )}
+
+      {/* LEADERBOARD SECTION */}
+      {leaderboard.length > 0 && (
+        <div className="mt-16 pt-8 border-t border-slate-200">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center justify-center gap-3">
+              <Award className="w-8 h-8 text-amber-500" />
+              Cohort Leaderboard
+            </h3>
+            <p className="text-sm font-medium text-slate-500 mt-2">
+              Top students by overall attendance
+            </p>
+          </div>
+          <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <div className="space-y-4">
+              {leaderboard.map((student, idx) => (
+                <div key={student.id} className={`flex items-center justify-between p-4 rounded-2xl border ${idx === 0 ? 'bg-amber-50 border-amber-200 shadow-md shadow-amber-500/10' : idx === 1 ? 'bg-slate-50 border-slate-300' : idx === 2 ? 'bg-amber-900/5 border-amber-900/20' : 'bg-white border-slate-100'}`}>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${idx === 0 ? 'bg-amber-400 text-amber-900' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-amber-700 text-amber-100' : 'bg-indigo-100 text-indigo-700'}`}>
+                      #{idx + 1}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900">{student.name}</h4>
+                      <p className="text-xs font-semibold text-slate-500">{student.email}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl font-black text-emerald-600">{student.attendedClasses}</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mt-0.5">Classes</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
