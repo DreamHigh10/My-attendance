@@ -19,13 +19,17 @@ import {
   Layers,
   ShieldCheck,
   UserCheck,
-  Search
+  Search,
+  Lock,
+  Hourglass,
+  ShieldAlert
 } from 'lucide-react';
 import { api } from '../services/api';
 import { firebaseAuth } from '../services/firebase';
 import { Cohort, ClassSession, Student, StudentLookupResponse } from '../types';
 import { UpcomingClassesSection } from './common/UpcomingClassesSection';
 import { DreamTeamLogo } from './common/DreamTeamLogo';
+import { AttendanceCountdown } from './common/AttendanceCountdown';
 
 interface StudentPortalProps {
   cohorts: Cohort[];
@@ -64,12 +68,44 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     studentStats?: any;
   } | null>(null);
 
-  // Active Classes
-  const [activeClasses, setActiveClasses] = useState<ClassSession[]>([]);
+  // Active Classes & Window Timing
+  const [allCohortClasses, setAllCohortClasses] = useState<ClassSession[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [isWindowElapsed, setIsWindowElapsed] = useState<boolean>(false);
+  const [isWindowNotStarted, setIsWindowNotStarted] = useState<boolean>(false);
+
+  const activeClass = allCohortClasses.find(c => c.id === selectedClassId)
+    || allCohortClasses.find(c => c.isAttendanceOpen && (!c.attendanceEndTime || Date.now() <= new Date(c.attendanceEndTime).getTime()))
+    || allCohortClasses[0];
 
   useEffect(() => {
-    loadActiveClasses();
+    loadCohortClasses();
   }, [selectedCohortId]);
+
+  useEffect(() => {
+    if (!activeClass) {
+      setIsWindowElapsed(false);
+      setIsWindowNotStarted(false);
+      return;
+    }
+
+    const check = () => {
+      const now = Date.now();
+      const isStartFuture = activeClass.attendanceStartTime 
+        ? now < new Date(activeClass.attendanceStartTime).getTime()
+        : false;
+      const isEndPassed = activeClass.attendanceEndTime 
+        ? now > new Date(activeClass.attendanceEndTime).getTime()
+        : false;
+
+      setIsWindowNotStarted(isStartFuture);
+      setIsWindowElapsed(isEndPassed);
+    };
+
+    check();
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, [activeClass]);
 
   useEffect(() => {
     if (emailInput.trim() && emailInput.includes('@')) {
@@ -77,13 +113,29 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     }
   }, [selectedCohortId]);
 
-  const loadActiveClasses = async () => {
+  const loadCohortClasses = async () => {
     try {
       const classes = await api.getClasses(selectedCohortId);
-      const active = classes.filter((c) => c.isAttendanceOpen);
-      setActiveClasses(active);
+      setAllCohortClasses(classes);
+      // Select the first active class if not chosen yet
+      const live = classes.find((c) => c.isAttendanceOpen && (!c.attendanceEndTime || Date.now() <= new Date(c.attendanceEndTime).getTime()));
+      if (live) {
+        setSelectedClassId(live.id);
+      } else if (classes.length > 0) {
+        setSelectedClassId(classes[0].id);
+      }
     } catch (err) {
       console.error('Error fetching classes:', err);
+    }
+  };
+
+  const handleCodeChange = (newCode: string) => {
+    const clean = newCode.toUpperCase();
+    setCode(clean);
+    // If the entered code matches any class in the cohort, auto-track that session
+    const matched = allCohortClasses.find(c => c.code.trim().toUpperCase() === clean.trim());
+    if (matched && matched.id !== selectedClassId) {
+      setSelectedClassId(matched.id);
     }
   };
 
@@ -156,6 +208,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       return;
     }
 
+    if (isWindowElapsed) {
+      setErrorMessage('The attendance window has elapsed. The countdown has reached 00:00 and submissions are now closed.');
+      return;
+    }
+
+    if (isWindowNotStarted) {
+      setErrorMessage(`Attendance marking has not started yet. Opens at ${activeClass?.attendanceStartTime ? new Date(activeClass.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'scheduled time'}.`);
+      return;
+    }
+
     setErrorMessage(null);
     setIsSubmitting(true);
 
@@ -172,7 +234,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         setMarkedSuccessData({
           message: res.message,
           record: res.record,
-          classSession: res.classSession || (activeClasses[0] || {}),
+          classSession: res.classSession || activeClass || ({} as any),
           studentStats: res.studentStats,
         });
 
@@ -200,7 +262,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     setMarkedSuccessData(null);
     setErrorMessage(null);
     setFeedback('');
-    loadActiveClasses();
+    loadCohortClasses();
     if (emailInput) handleLookupStudent(emailInput);
   };
 
@@ -323,15 +385,93 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         /* MAIN ATTENDANCE CARD */
         <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden backdrop-blur-md">
           
-          {/* Active Class Live Banner */}
-          {activeClasses.length > 0 && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-center gap-2.5 text-xs text-emerald-900 font-bold">
-                <span className="flex h-3 w-3 rounded-full bg-emerald-500 animate-ping" />
-                <span>Class Session in Progress: <strong className="text-slate-900 font-black">{activeClasses[0].title}</strong></span>
+          {/* Active Class Live Banner & Countdown */}
+          {activeClass && (
+            <div className="mb-6 space-y-3">
+              {/* Optional Class Selector if multiple classes */}
+              {allCohortClasses.length > 1 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                  <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">Class Session:</span>
+                  {allCohortClasses.map((cls) => (
+                    <button
+                      key={cls.id}
+                      type="button"
+                      onClick={() => setSelectedClassId(cls.id)}
+                      className={`px-3 py-1 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        activeClass.id === cls.id
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {cls.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-2.5 text-xs text-emerald-900 font-bold">
+                  <span className={`flex h-3 w-3 rounded-full ${
+                    isWindowElapsed 
+                      ? 'bg-rose-500' 
+                      : isWindowNotStarted 
+                      ? 'bg-amber-500 animate-pulse' 
+                      : 'bg-emerald-500 animate-ping'
+                  }`} />
+                  <span>
+                    Class Session: <strong className="text-slate-900 font-black">{activeClass.title}</strong>
+                  </span>
+                </div>
+                <div className="text-xs font-semibold text-emerald-800">
+                  Facilitator: {activeClass.instructorName}
+                </div>
               </div>
-              <div className="text-xs font-semibold text-emerald-700">
-                Facilitator: {activeClasses[0].instructorName}
+
+              {/* HIGH-VISIBILITY LIVE COUNTDOWN DISPLAY */}
+              <AttendanceCountdown
+                startTime={activeClass.attendanceStartTime}
+                endTime={activeClass.attendanceEndTime}
+                isOpen={activeClass.isAttendanceOpen && !isWindowElapsed}
+                size="lg"
+                onElapsed={() => setIsWindowElapsed(true)}
+              />
+            </div>
+          )}
+
+          {/* Scheduled / Not Started Notice */}
+          {isWindowNotStarted && activeClass?.attendanceStartTime && (
+            <div className="mb-6 p-4.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900 text-sm flex items-start gap-3.5 shadow-sm animate-fade-in">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600">
+                <Hourglass className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <strong className="font-black text-amber-900 block text-base mb-0.5">
+                  Attendance Window Scheduled &bull; Opens at {new Date(activeClass.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </strong>
+                <p className="text-xs sm:text-sm text-amber-800">
+                  Submissions are currently pending start time. The secret code field and submit button will unlock automatically when the countdown starts.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Locked Notice if countdown elapsed */}
+          {isWindowElapsed && (
+            <div className="mb-6 p-4.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-sm flex items-start gap-3.5 shadow-sm animate-fade-in">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0 text-rose-600">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="font-black text-rose-900 block text-base mb-0.5">
+                  Attendance Window Has Elapsed &bull; Submissions Locked
+                </strong>
+                <p className="text-xs sm:text-sm text-rose-800">
+                  The countdown timer for this class has reached 00:00. The attendance window closed at{' '}
+                  <span className="font-bold underline">
+                    {activeClass?.attendanceEndTime ? new Date(activeClass.attendanceEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'the deadline'}
+                  </span>
+                  . In accordance with policy, no further check-ins can be accepted.
+                </p>
               </div>
             </div>
           )}
@@ -474,10 +614,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="Type secret word (e.g. CATALYST, VELOCITY, DREAMER)"
+                  disabled={isWindowElapsed || isWindowNotStarted}
+                  placeholder={
+                    isWindowElapsed 
+                      ? "Attendance window elapsed - Submissions closed" 
+                      : isWindowNotStarted
+                      ? `Attendance opens at ${activeClass?.attendanceStartTime ? new Date(activeClass.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'scheduled time'}`
+                      : "Type secret word (e.g. CATALYST, VELOCITY, DREAMER)"
+                  }
                   value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-50 border-2 border-slate-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 rounded-2xl px-4 py-4 text-lg sm:text-2xl font-mono font-black tracking-widest text-slate-900 placeholder-slate-400 transition-all uppercase text-center"
+                  onChange={(e) => handleCodeChange(e.target.value)}
+                  className={`w-full border-2 rounded-2xl px-4 py-4 text-lg sm:text-2xl font-mono font-black tracking-widest text-center transition-all uppercase ${
+                    isWindowElapsed || isWindowNotStarted
+                      ? 'bg-slate-100 border-slate-300 text-slate-400 cursor-not-allowed'
+                      : 'bg-slate-50 border-slate-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 text-slate-900 placeholder-slate-400'
+                  }`}
                 />
               </div>
             </div>
@@ -489,23 +640,38 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </label>
               <input
                 type="text"
+                disabled={isWindowElapsed || isWindowNotStarted}
                 placeholder="e.g. Understood today's full stack architecture!"
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
             {/* MARK ATTENDANCE BUTTON */}
             <button
               type="submit"
-              disabled={isSubmitting || !matchedStudentData?.student || !code.trim()}
-              className="w-full py-4 sm:py-5 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-emerald-600 hover:from-violet-700 hover:to-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-base sm:text-lg shadow-xl shadow-indigo-600/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.01]"
+              disabled={isSubmitting || !matchedStudentData?.student || !code.trim() || isWindowElapsed || isWindowNotStarted}
+              className={`w-full py-4 sm:py-5 rounded-2xl font-black text-base sm:text-lg transition-all flex items-center justify-center gap-2.5 ${
+                isWindowElapsed || isWindowNotStarted
+                  ? 'bg-slate-300 text-slate-600 cursor-not-allowed border border-slate-400/50'
+                  : 'bg-gradient-to-r from-violet-600 via-indigo-600 to-emerald-600 hover:from-violet-700 hover:to-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-xl shadow-indigo-600/25 cursor-pointer hover:scale-[1.01]'
+              }`}
             >
               {isSubmitting ? (
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin" />
                   <span>Validating Code &amp; Marking Attendance...</span>
+                </>
+              ) : isWindowElapsed ? (
+                <>
+                  <Lock className="w-5 h-5 text-slate-500" />
+                  <span>Attendance Window Elapsed &bull; Closed</span>
+                </>
+              ) : isWindowNotStarted ? (
+                <>
+                  <Hourglass className="w-5 h-5 text-amber-700 animate-pulse" />
+                  <span>Attendance Opens at {activeClass?.attendanceStartTime ? new Date(activeClass.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Scheduled Time'}</span>
                 </>
               ) : (
                 <>
@@ -524,10 +690,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       {/* UPCOMING CLASSES SCHEDULE & PREPARATION */}
       <div className="mt-12 pt-8 border-t border-slate-200">
         <UpcomingClassesSection
-          classes={activeClasses}
+          classes={allCohortClasses}
           cohort={currentCohort}
           isAdminView={false}
           onSelectClassForAttendance={(cls) => {
+            setSelectedClassId(cls.id);
             setCode(cls.code);
             window.scrollTo({ top: 120, behavior: 'smooth' });
           }}

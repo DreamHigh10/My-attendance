@@ -273,19 +273,28 @@ export class PersistentDataStore {
   }
 
   public addClass(classData: Partial<ClassSession>): ClassSession {
+    const windowMins = classData.attendanceWindowMinutes || 30;
+    const now = new Date();
+    const startTime = classData.attendanceStartTime || now.toISOString();
+    const endTime = classData.attendanceEndTime || (classData.isAttendanceOpen !== false 
+      ? new Date(now.getTime() + windowMins * 60000).toISOString()
+      : undefined);
+
     const newClass: ClassSession = {
       id: `cls-${Date.now()}`,
       cohortId: classData.cohortId || 'dtp-cohort-2',
       title: classData.title || 'Live Class Session',
       instructorName: classData.instructorName || 'Facilitator',
-      date: classData.date || new Date().toISOString().split('T')[0],
+      date: classData.date || now.toISOString().split('T')[0],
       time: classData.time || '18:00 - 20:00 WAT',
       code: (classData.code || 'CATALYST').toUpperCase().trim(),
       isAttendanceOpen: classData.isAttendanceOpen !== undefined ? classData.isAttendanceOpen : true,
-      attendanceWindowMinutes: classData.attendanceWindowMinutes || 120,
+      attendanceWindowMinutes: windowMins,
+      attendanceStartTime: startTime,
+      attendanceEndTime: endTime,
       meetingUrl: classData.meetingUrl || '',
       notes: classData.notes || '',
-      createdAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
     };
 
     this.data.classes.unshift(newClass);
@@ -301,13 +310,78 @@ export class PersistentDataStore {
     return true;
   }
 
-  public toggleClassAttendance(classId: string, isOpen?: boolean): ClassSession {
+  public toggleClassAttendance(classId: string, isOpen?: boolean, durationMinutes?: number): ClassSession {
     const cls = this.data.classes.find(c => c.id === classId);
     if (!cls) throw new Error('Class session not found');
 
-    cls.isAttendanceOpen = isOpen !== undefined ? isOpen : !cls.isAttendanceOpen;
+    const nextOpen = isOpen !== undefined ? isOpen : !cls.isAttendanceOpen;
+    cls.isAttendanceOpen = nextOpen;
+
+    const now = new Date();
+    if (nextOpen) {
+      const mins = durationMinutes || cls.attendanceWindowMinutes || 30;
+      cls.attendanceStartTime = now.toISOString();
+      cls.attendanceEndTime = new Date(now.getTime() + mins * 60000).toISOString();
+      cls.attendanceWindowMinutes = mins;
+    } else {
+      cls.attendanceEndTime = now.toISOString();
+    }
+
     this.saveToStorage(this.data);
     return cls;
+  }
+
+  public updateClassWindow(classId: string, payload: { startTime?: string; endTime?: string; additionalMinutes?: number }): ClassSession {
+    const cls = this.data.classes.find(c => c.id === classId);
+    if (!cls) throw new Error('Class session not found');
+
+    if (payload.additionalMinutes && cls.attendanceEndTime) {
+      const currentEnd = new Date(cls.attendanceEndTime);
+      cls.attendanceEndTime = new Date(currentEnd.getTime() + payload.additionalMinutes * 60000).toISOString();
+      cls.isAttendanceOpen = true;
+    } else {
+      if (payload.startTime) cls.attendanceStartTime = payload.startTime;
+      if (payload.endTime) {
+        cls.attendanceEndTime = payload.endTime;
+        cls.isAttendanceOpen = new Date() < new Date(payload.endTime);
+      }
+    }
+
+    this.saveToStorage(this.data);
+    return cls;
+  }
+
+  public updateClass(classId: string, updates: Partial<ClassSession>): ClassSession {
+    const cls = this.data.classes.find(c => c.id === classId);
+    if (!cls) throw new Error('Class session not found');
+
+    if (updates.title !== undefined) cls.title = updates.title;
+    if (updates.instructorName !== undefined) cls.instructorName = updates.instructorName;
+    if (updates.date !== undefined) cls.date = updates.date;
+    if (updates.time !== undefined) cls.time = updates.time;
+    if (updates.code !== undefined) cls.code = updates.code.toUpperCase().trim();
+    if (updates.isAttendanceOpen !== undefined) cls.isAttendanceOpen = updates.isAttendanceOpen;
+    if (updates.attendanceStartTime !== undefined) cls.attendanceStartTime = updates.attendanceStartTime;
+    if (updates.attendanceEndTime !== undefined) cls.attendanceEndTime = updates.attendanceEndTime;
+    if (updates.attendanceWindowMinutes !== undefined) cls.attendanceWindowMinutes = updates.attendanceWindowMinutes;
+    if (updates.meetingUrl !== undefined) cls.meetingUrl = updates.meetingUrl;
+    if (updates.notes !== undefined) cls.notes = updates.notes;
+
+    this.saveToStorage(this.data);
+    return cls;
+  }
+
+  public syncClasses(incomingClasses: ClassSession[]): void {
+    if (!Array.isArray(incomingClasses)) return;
+    for (const inc of incomingClasses) {
+      const idx = this.data.classes.findIndex(c => c.id === inc.id);
+      if (idx >= 0) {
+        this.data.classes[idx] = { ...this.data.classes[idx], ...inc };
+      } else {
+        this.data.classes.push(inc);
+      }
+    }
+    this.saveToStorage(this.data);
   }
 
   public markAttendance(payload: { code: string; studentEmail: string; studentName?: string; studentPhone?: string; feedback?: string }): { record: AttendanceRecord; classSession: ClassSession; studentStats: any } {
@@ -319,8 +393,20 @@ export class PersistentDataStore {
       throw new Error('Invalid attendance word/code.');
     }
 
+    const now = new Date();
+
     if (!classSession.isAttendanceOpen) {
-      throw new Error('Attendance window for this class is currently closed by the administrator.');
+      throw new Error('Attendance window for this class is currently closed.');
+    }
+
+    if (classSession.attendanceStartTime && now < new Date(classSession.attendanceStartTime)) {
+      throw new Error(`Attendance marking has not started yet. Starts at ${new Date(classSession.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`);
+    }
+
+    if (classSession.attendanceEndTime && now > new Date(classSession.attendanceEndTime)) {
+      classSession.isAttendanceOpen = false;
+      this.saveToStorage(this.data);
+      throw new Error(`Attendance window elapsed at ${new Date(classSession.attendanceEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. The countdown has expired and submissions are now locked.`);
     }
 
     // Check duplicate

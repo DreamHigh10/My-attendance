@@ -53,6 +53,8 @@ interface ClassSessionData {
   code: string; // Secret word or phrase typed by admin
   isAttendanceOpen: boolean;
   attendanceWindowMinutes?: number;
+  attendanceStartTime?: string;
+  attendanceEndTime?: string;
   meetingUrl?: string;
   notes?: string;
   createdAt: string;
@@ -238,6 +240,11 @@ app.post('/api/classes', (req: Request, res: Response) => {
     ? code.trim().toUpperCase() 
     : `DREAM-${Math.floor(100 + Math.random() * 900)}`;
 
+  const windowMins = Number(attendanceWindowMinutes) || 30;
+  const now = new Date();
+  const startTime = req.body.attendanceStartTime || now.toISOString();
+  const endTime = req.body.attendanceEndTime || new Date(now.getTime() + windowMins * 60000).toISOString();
+
   const newClass: ClassSessionData = {
     id: `cls-${Date.now()}`,
     cohortId,
@@ -247,10 +254,12 @@ app.post('/api/classes', (req: Request, res: Response) => {
     time: time || '18:00 - 20:30 WAT',
     code: finalCode,
     isAttendanceOpen: true,
-    attendanceWindowMinutes: Number(attendanceWindowMinutes) || 120,
+    attendanceWindowMinutes: windowMins,
+    attendanceStartTime: startTime,
+    attendanceEndTime: endTime,
     meetingUrl: meetingUrl || '',
     notes: notes || '',
-    createdAt: new Date().toISOString(),
+    createdAt: now.toISOString(),
   };
 
   db.classes.unshift(newClass);
@@ -273,8 +282,30 @@ app.patch('/api/classes/:id/toggle-attendance', (req: Request, res: Response) =>
   const { id } = req.params;
   const targetClass = db.classes.find(c => c.id === id);
   if (!targetClass) return res.status(404).json({ error: 'Class not found' });
-  targetClass.isAttendanceOpen = req.body.isOpen !== undefined ? req.body.isOpen : !targetClass.isAttendanceOpen;
+  
+  const nextOpen = req.body.isOpen !== undefined ? req.body.isOpen : !targetClass.isAttendanceOpen;
+  targetClass.isAttendanceOpen = nextOpen;
+
+  const now = new Date();
+  if (nextOpen) {
+    const mins = Number(req.body.durationMinutes) || targetClass.attendanceWindowMinutes || 30;
+    targetClass.attendanceStartTime = now.toISOString();
+    targetClass.attendanceEndTime = new Date(now.getTime() + mins * 60000).toISOString();
+    targetClass.attendanceWindowMinutes = mins;
+  } else {
+    targetClass.attendanceEndTime = now.toISOString();
+  }
+
   res.json({ success: true, classSession: targetClass });
+});
+
+app.delete('/api/classes/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const index = db.classes.findIndex(c => c.id === id);
+  if (index === -1) return res.status(404).json({ error: 'Class not found' });
+  const removed = db.classes.splice(index, 1)[0];
+  db.attendance = db.attendance.filter(a => a.classId !== id);
+  res.json({ success: true, removed });
 });
 
 // 4. Attendance Verification & Marking
@@ -293,6 +324,11 @@ app.post('/api/attendance/verify-code', (req: Request, res: Response) => {
       message: 'Invalid attendance word/code. Please check the code provided by the administrator during class.' 
     });
   }
+
+  const now = new Date();
+  const isExpired = classSession.attendanceEndTime ? now > new Date(classSession.attendanceEndTime) : false;
+  const isNotStarted = classSession.attendanceStartTime ? now < new Date(classSession.attendanceStartTime) : false;
+  const isEffectiveOpen = classSession.isAttendanceOpen && !isExpired && !isNotStarted;
 
   const cohort = db.cohorts.find(c => c.id === classSession.cohortId);
 
@@ -316,7 +352,9 @@ app.post('/api/attendance/verify-code', (req: Request, res: Response) => {
     alreadyMarked,
     markedRecord,
     matchedStudent,
-    isAttendanceOpen: classSession.isAttendanceOpen,
+    isAttendanceOpen: isEffectiveOpen,
+    isExpired,
+    isNotStarted,
   });
 });
 
@@ -347,9 +385,24 @@ app.post('/api/attendance/mark', (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Invalid attendance word/code.' });
     }
 
+    const now = new Date();
+
     if (!classSession.isAttendanceOpen) {
       return res.status(400).json({ 
-        error: 'Attendance window for this class is currently closed by the administrator.' 
+        error: 'Attendance window for this class is currently closed.' 
+      });
+    }
+
+    if (classSession.attendanceStartTime && now < new Date(classSession.attendanceStartTime)) {
+      return res.status(400).json({ 
+        error: `Attendance marking has not started yet. Starts at ${new Date(classSession.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` 
+      });
+    }
+
+    if (classSession.attendanceEndTime && now > new Date(classSession.attendanceEndTime)) {
+      classSession.isAttendanceOpen = false;
+      return res.status(400).json({ 
+        error: `Attendance window elapsed at ${new Date(classSession.attendanceEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. The countdown has expired and submissions are locked.` 
       });
     }
 

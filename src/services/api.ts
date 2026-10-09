@@ -120,6 +120,7 @@ export const api = {
     try {
       const fbClasses = await firebaseDb.getClassesFromFirestore(cohortId);
       if (fbClasses.length > 0) {
+        persistentStore.syncClasses(fbClasses);
         return fbClasses;
       }
     } catch (e) {
@@ -130,6 +131,7 @@ export const api = {
     const url = cohortId ? `/api/classes?cohortId=${cohortId}` : '/api/classes';
     const { ok, data } = await safeFetchJson(url);
     if (ok && data?.classes?.length) {
+      persistentStore.syncClasses(data.classes);
       return data.classes;
     }
 
@@ -153,7 +155,7 @@ export const api = {
   },
 
   async updateClass(classId: string, updates: Partial<ClassSession>): Promise<ClassSession> {
-    const updated = persistentStore.toggleClassAttendance(classId, updates.isAttendanceOpen);
+    const updated = persistentStore.updateClass(classId, updates);
     firebaseDb.saveClassToFirestore(updated).catch(() => {});
     safeFetchJson(`/api/classes/${classId}`, {
       method: 'PATCH',
@@ -163,15 +165,35 @@ export const api = {
     return updated;
   },
 
-  async toggleClassAttendance(classId: string, isOpen?: boolean): Promise<ClassSession> {
-    const updated = persistentStore.toggleClassAttendance(classId, isOpen);
+  async toggleClassAttendance(classId: string, isOpen?: boolean, durationMinutes?: number): Promise<ClassSession> {
+    const updated = persistentStore.toggleClassAttendance(classId, isOpen, durationMinutes);
     firebaseDb.saveClassToFirestore(updated).catch(() => {});
     safeFetchJson(`/api/classes/${classId}/toggle-attendance`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isOpen }),
+      body: JSON.stringify({ isOpen, durationMinutes }),
     }).catch(() => {});
     return updated;
+  },
+
+  async updateClassWindow(classId: string, payload: { startTime?: string; endTime?: string; additionalMinutes?: number }): Promise<ClassSession> {
+    const updated = persistentStore.updateClassWindow(classId, payload);
+    firebaseDb.saveClassToFirestore(updated).catch(() => {});
+    safeFetchJson(`/api/classes/${classId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
+    return updated;
+  },
+
+  async deleteClass(classId: string): Promise<boolean> {
+    const success = persistentStore.deleteClass(classId);
+    firebaseDb.deleteClassFromFirestore(classId).catch(() => {});
+    safeFetchJson(`/api/classes/${classId}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+    return success;
   },
 
   // Attendance (Multi-Device Ready)
@@ -185,6 +207,25 @@ export const api = {
 
     if (!classSession) {
       return { valid: false, message: 'Invalid attendance word/code.' };
+    }
+
+    const now = new Date();
+    const isExpired = classSession.attendanceEndTime ? now > new Date(classSession.attendanceEndTime) : false;
+    const isNotStarted = classSession.attendanceStartTime ? now < new Date(classSession.attendanceStartTime) : false;
+    const isEffectiveOpen = classSession.isAttendanceOpen && !isExpired && !isNotStarted;
+
+    if (isExpired) {
+      return { 
+        valid: false, 
+        message: `Attendance window elapsed at ${new Date(classSession.attendanceEndTime!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. The countdown has expired and submissions are now closed.` 
+      };
+    }
+
+    if (isNotStarted) {
+      return { 
+        valid: false, 
+        message: `Attendance marking has not started yet. Starts at ${new Date(classSession.attendanceStartTime!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` 
+      };
     }
 
     // Check attendance in Firestore & local
@@ -208,7 +249,7 @@ export const api = {
       alreadyMarked: !!markedRecord,
       markedRecord,
       matchedStudent,
-      isAttendanceOpen: classSession.isAttendanceOpen,
+      isAttendanceOpen: isEffectiveOpen,
     };
   },
 
@@ -219,6 +260,26 @@ export const api = {
     studentPhone?: string;
     feedback?: string;
   }): Promise<{ success: boolean; message: string; record: AttendanceRecord; classSession?: ClassSession; studentStats?: any }> {
+    const cleanCode = payload.code.trim().toUpperCase();
+    const cleanEmail = payload.studentEmail.trim().toLowerCase();
+
+    // Pre-flight check against latest class list
+    const classes = await this.getClasses();
+    const matchedClass = classes.find(c => c.code.trim().toUpperCase() === cleanCode);
+
+    if (matchedClass) {
+      const now = new Date();
+      if (!matchedClass.isAttendanceOpen) {
+        throw new Error('Attendance window for this class is currently closed.');
+      }
+      if (matchedClass.attendanceStartTime && now < new Date(matchedClass.attendanceStartTime)) {
+        throw new Error(`Attendance marking has not started yet. Starts at ${new Date(matchedClass.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`);
+      }
+      if (matchedClass.attendanceEndTime && now > new Date(matchedClass.attendanceEndTime)) {
+        throw new Error(`Attendance window elapsed at ${new Date(matchedClass.attendanceEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. The countdown has reached 00:00 and submissions are now strictly closed.`);
+      }
+    }
+
     const result = persistentStore.markAttendance(payload);
 
     // Save to Cloud Firestore immediately

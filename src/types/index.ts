@@ -19,6 +19,8 @@ export interface ClassSession {
   code: string; // Secret word or custom code typed by admin
   isAttendanceOpen: boolean;
   attendanceWindowMinutes?: number;
+  attendanceStartTime?: string;
+  attendanceEndTime?: string;
   meetingUrl?: string;
   notes?: string;
   createdAt: string;

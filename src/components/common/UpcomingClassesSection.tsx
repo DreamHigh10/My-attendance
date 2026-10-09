@@ -7,11 +7,15 @@ import {
   ExternalLink, 
   Sparkles, 
   Radio, 
-  BellRing,
-  ArrowRight,
-  CheckCircle2
+  BellRing, 
+  ArrowRight, 
+  CheckCircle2,
+  Lock,
+  Hourglass,
+  Timer
 } from 'lucide-react';
 import { ClassSession, Cohort } from '../../types';
+import { AttendanceCountdown } from './AttendanceCountdown';
 
 interface UpcomingClassesSectionProps {
   classes: ClassSession[];
@@ -57,7 +61,7 @@ export const UpcomingClassesSection: React.FC<UpcomingClassesSectionProps> = ({
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
             {isAdminView 
               ? 'Preview scheduled sessions and dispatch instant reminder broadcasts to cohort members.' 
-              : 'Stay up to date with scheduled classes and prepare ahead of live sessions.'}
+              : 'Stay up to date with scheduled classes, check attendance windows, and prepare ahead of live sessions.'}
           </p>
         </div>
 
@@ -72,11 +76,20 @@ export const UpcomingClassesSection: React.FC<UpcomingClassesSectionProps> = ({
           const relativeText = getRelativeDayText(cls.date);
           const isToday = relativeText === 'Today';
 
+          const now = Date.now();
+          const isElapsed = cls.attendanceEndTime 
+            ? now > new Date(cls.attendanceEndTime).getTime() 
+            : false;
+          const isNotStarted = cls.attendanceStartTime 
+            ? now < new Date(cls.attendanceStartTime).getTime() 
+            : false;
+          const isLive = cls.isAttendanceOpen && !isElapsed && !isNotStarted;
+
           return (
             <div
               key={cls.id}
               className={`bg-white border-2 rounded-3xl p-5 sm:p-6 shadow-md shadow-slate-100 flex flex-col justify-between transition-all hover:scale-[1.01] ${
-                cls.isAttendanceOpen 
+                isLive 
                   ? 'border-indigo-500 ring-4 ring-indigo-50 shadow-indigo-500/10' 
                   : isToday 
                   ? 'border-amber-400 bg-amber-50/20' 
@@ -94,10 +107,22 @@ export const UpcomingClassesSection: React.FC<UpcomingClassesSectionProps> = ({
                     {relativeText}
                   </span>
 
-                  {cls.isAttendanceOpen ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      <Radio className="w-3 h-3 text-emerald-600 animate-pulse" />
-                      Live Window Open
+                  {isLive ? (
+                    <AttendanceCountdown
+                      startTime={cls.attendanceStartTime}
+                      endTime={cls.attendanceEndTime}
+                      isOpen={true}
+                      size="sm"
+                    />
+                  ) : isElapsed ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                      <Lock className="w-3 h-3 text-slate-500" />
+                      Window Closed
+                    </span>
+                  ) : isNotStarted ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      <Hourglass className="w-3 h-3 text-amber-600" />
+                      Starts at {cls.attendanceStartTime ? new Date(cls.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'class time'}
                     </span>
                   ) : (
                     <span className="text-[11px] font-bold text-slate-400">
@@ -110,7 +135,7 @@ export const UpcomingClassesSection: React.FC<UpcomingClassesSectionProps> = ({
                   {cls.title}
                 </h4>
 
-                <div className="space-y-1.5 text-xs text-slate-600 mb-4 font-medium">
+                <div className="space-y-1.5 text-xs text-slate-600 mb-3 font-medium">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
                     <span>{new Date(cls.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -127,8 +152,23 @@ export const UpcomingClassesSection: React.FC<UpcomingClassesSectionProps> = ({
                   </div>
                 </div>
 
+                {/* Attendance Window Display */}
+                {(cls.attendanceStartTime || cls.attendanceEndTime) && (
+                  <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 mb-3 text-[11px] text-slate-600 flex items-center justify-between">
+                    <span className="flex items-center gap-1 font-bold text-slate-700">
+                      <Timer className="w-3 h-3 text-indigo-600" />
+                      <span>Window:</span>
+                    </span>
+                    <span className="font-mono font-semibold">
+                      {cls.attendanceStartTime ? new Date(cls.attendanceStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Start'}
+                      {' &rarr; '}
+                      {cls.attendanceEndTime ? new Date(cls.attendanceEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'End'}
+                    </span>
+                  </div>
+                )}
+
                 {cls.notes && (
-                  <p className="text-[11px] text-slate-500 italic bg-slate-50 p-2.5 rounded-xl border border-slate-200 mb-4 line-clamp-2">
+                  <p className="text-[11px] text-slate-500 italic bg-slate-50 p-2.5 rounded-xl border border-slate-200 mb-3 line-clamp-2">
                     &ldquo;{cls.notes}&rdquo;
                   </p>
                 )}
@@ -158,7 +198,7 @@ export const UpcomingClassesSection: React.FC<UpcomingClassesSectionProps> = ({
                   </button>
                 )}
 
-                {!isAdminView && cls.isAttendanceOpen && onSelectClassForAttendance && (
+                {!isAdminView && isLive && onSelectClassForAttendance && (
                   <button
                     onClick={() => onSelectClassForAttendance(cls)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition-all cursor-pointer ml-auto"
@@ -166,6 +206,12 @@ export const UpcomingClassesSection: React.FC<UpcomingClassesSectionProps> = ({
                     <span>Enter Code &bull; Mark Now</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
+                )}
+
+                {!isAdminView && !isLive && isElapsed && (
+                  <span className="text-[11px] text-slate-400 font-bold ml-auto">
+                    Submissions Closed
+                  </span>
                 )}
               </div>
             </div>
