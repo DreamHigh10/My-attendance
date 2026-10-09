@@ -265,6 +265,35 @@ export const firebaseDb = {
     }
   },
 
+  async deleteAttendanceFromFirestore(classId: string, studentEmail: string): Promise<boolean> {
+    try {
+      const cleanEmail = studentEmail.trim().toLowerCase();
+      const coll = collection(db, 'attendance');
+      const q = query(coll, where('classId', '==', classId), where('studentEmail', '==', cleanEmail));
+      const snapshot = await withTimeout(getDocs(q), 4000);
+      if (snapshot.empty) return true;
+      const batch = writeBatch(db);
+      snapshot.forEach(docSnap => {
+        batch.delete(docSnap.ref);
+      });
+      await withTimeout(batch.commit(), 4000);
+      return true;
+    } catch (err) {
+      console.warn('Firebase delete attendance warning:', err);
+      return false;
+    }
+  },
+
+  async deleteAttendanceRecordById(recordId: string): Promise<boolean> {
+    try {
+      await withTimeout(deleteDoc(doc(db, 'attendance', recordId)), 4000);
+      return true;
+    } catch (err) {
+      console.warn('Firebase delete attendance record warning:', err);
+      return false;
+    }
+  },
+
   // --- COHORTS ---
   async getCohortsFromFirestore(): Promise<Cohort[]> {
     try {

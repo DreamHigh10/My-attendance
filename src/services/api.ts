@@ -303,6 +303,7 @@ export const api = {
     try {
       const fbAttendance = await firebaseDb.getAttendanceFromFirestore(classId);
       if (fbAttendance.length > 0) {
+        persistentStore.syncAttendance(fbAttendance);
         return fbAttendance;
       }
     } catch (e) {
@@ -310,7 +311,10 @@ export const api = {
     }
 
     const { ok, data } = await safeFetchJson(`/api/attendance/class/${classId}`);
-    if (ok && data?.records) return data.records;
+    if (ok && data?.records && data.records.length > 0) {
+      persistentStore.syncAttendance(data.records);
+      return data.records;
+    }
 
     return persistentStore.getAttendance(classId);
   },
@@ -319,15 +323,38 @@ export const api = {
     classId: string;
     studentEmail: string;
     studentName?: string;
+    studentPhone?: string;
     status: 'present' | 'late' | 'excused' | 'absent';
   }): Promise<any> {
-    const { ok, data } = await safeFetchJson('/api/attendance/manual-update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (ok && data) return data;
-    return { success: true };
+    const cleanEmail = payload.studentEmail.trim().toLowerCase();
+
+    // 1. Immediately update local persistent store (instant synchronous response)
+    const localResult = persistentStore.manualUpdateAttendance(payload);
+
+    // 2. Sync to Cloud Firestore for multi-device live persistence
+    try {
+      if (payload.status === 'absent') {
+        await firebaseDb.deleteAttendanceFromFirestore(payload.classId, cleanEmail);
+      } else if (localResult?.record) {
+        await firebaseDb.saveAttendanceToFirestore(localResult.record);
+      }
+    } catch (err) {
+      console.warn('Firestore manual update warning:', err);
+    }
+
+    // 3. Sync to backend API endpoint
+    try {
+      const { ok, data } = await safeFetchJson('/api/attendance/manual-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (ok && data) return data;
+    } catch (err) {
+      console.warn('Backend manual-update warning:', err);
+    }
+
+    return localResult || { success: true };
   },
 
   // Students & Excel Bulk Import (Multi-Device Cloud Firestore Sync)

@@ -467,7 +467,7 @@ app.get('/api/attendance/class/:classId', (req: Request, res: Response) => {
 });
 
 app.post('/api/attendance/manual-update', (req: Request, res: Response) => {
-  const { classId, studentEmail, studentName, status } = req.body;
+  const { classId, studentEmail, studentName, studentPhone, status } = req.body;
   if (!classId || !studentEmail) {
     return res.status(400).json({ error: 'classId and studentEmail are required' });
   }
@@ -480,6 +480,8 @@ app.post('/api/attendance/manual-update', (req: Request, res: Response) => {
       return res.json({ success: true, message: 'Marked Absent' });
     } else {
       db.attendance[existingIndex].status = status;
+      if (studentName) db.attendance[existingIndex].studentName = studentName;
+      if (studentPhone) db.attendance[existingIndex].studentPhone = studentPhone;
       return res.json({ success: true, record: db.attendance[existingIndex] });
     }
   } else {
@@ -491,9 +493,11 @@ app.post('/api/attendance/manual-update', (req: Request, res: Response) => {
       cohortId: classSession?.cohortId || 'dtp-cohort-2',
       studentEmail: cleanEmail,
       studentName: studentName || 'Participant',
+      studentPhone: studentPhone || '',
       status: status || 'present',
       markedAt: new Date().toISOString(),
       classCodeUsed: classSession?.code || 'MANUAL-ADMIN',
+      feedback: 'Marked present via Admin Manual Override',
     };
     db.attendance.push(newRecord);
     return res.json({ success: true, record: newRecord });

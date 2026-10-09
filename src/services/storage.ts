@@ -447,6 +447,74 @@ export class PersistentDataStore {
     };
   }
 
+  public manualUpdateAttendance(payload: {
+    classId: string;
+    studentEmail: string;
+    studentName?: string;
+    studentPhone?: string;
+    status: 'present' | 'late' | 'excused' | 'absent';
+  }): { success: boolean; record?: AttendanceRecord } {
+    const cleanEmail = payload.studentEmail.trim().toLowerCase();
+    const existingIndex = this.data.attendance.findIndex(
+      a => a.classId === payload.classId && a.studentEmail.toLowerCase() === cleanEmail
+    );
+
+    if (payload.status === 'absent') {
+      if (existingIndex >= 0) {
+        this.data.attendance.splice(existingIndex, 1);
+        this.saveToStorage(this.data);
+      }
+      return { success: true };
+    }
+
+    const classSession = this.data.classes.find(c => c.id === payload.classId);
+    const student = this.data.students.find(s => s.email.toLowerCase() === cleanEmail);
+
+    if (existingIndex >= 0) {
+      this.data.attendance[existingIndex].status = payload.status || 'present';
+      this.data.attendance[existingIndex].markedAt = new Date().toISOString();
+      if (payload.studentName) {
+        this.data.attendance[existingIndex].studentName = payload.studentName;
+      }
+      if (payload.studentPhone) {
+        this.data.attendance[existingIndex].studentPhone = payload.studentPhone;
+      }
+      this.saveToStorage(this.data);
+      return { success: true, record: this.data.attendance[existingIndex] };
+    } else {
+      const newRecord: AttendanceRecord = {
+        id: `att-man-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        classId: payload.classId,
+        cohortId: classSession?.cohortId || student?.cohortId || 'dtp-cohort-2',
+        studentEmail: cleanEmail,
+        studentName: payload.studentName || student?.name || 'Participant',
+        studentPhone: payload.studentPhone || student?.phone || '',
+        status: payload.status || 'present',
+        markedAt: new Date().toISOString(),
+        classCodeUsed: classSession?.code || 'MANUAL-OVERRIDE',
+        feedback: 'Marked present via Admin Manual Override',
+      };
+      this.data.attendance.push(newRecord);
+      this.saveToStorage(this.data);
+      return { success: true, record: newRecord };
+    }
+  }
+
+  public syncAttendance(incoming: AttendanceRecord[]) {
+    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    for (const inc of incoming) {
+      const idx = this.data.attendance.findIndex(
+        a => a.id === inc.id || (a.classId === inc.classId && a.studentEmail.toLowerCase() === inc.studentEmail.toLowerCase())
+      );
+      if (idx >= 0) {
+        this.data.attendance[idx] = { ...this.data.attendance[idx], ...inc };
+      } else {
+        this.data.attendance.push(inc);
+      }
+    }
+    this.saveToStorage(this.data);
+  }
+
   public addCampaign(campaign: EmailCampaign) {
     this.data.campaigns.unshift(campaign);
     this.saveToStorage(this.data);
