@@ -688,27 +688,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsPointsModalOpen(true)}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1 cursor-pointer transition-all hover:scale-105"
-                        >
-                          <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Points Allotment</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const el = document.getElementById('greatness-leaderboard');
-                            if (el) el.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-xs flex items-center gap-1 cursor-pointer transition-all hover:scale-105"
-                        >
-                          <Trophy className="w-3.5 h-3.5" />
-                          <span>View Leaderboard</span>
-                        </button>
-                      </div>
                     </div>
 
                     {/* Breakdown Chips */}
