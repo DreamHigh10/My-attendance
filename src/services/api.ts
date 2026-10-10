@@ -319,6 +319,19 @@ export const api = {
     return persistentStore.getAttendance(classId);
   },
 
+  async getAttendance(classId?: string): Promise<AttendanceRecord[]> {
+    try {
+      const fbAttendance = await firebaseDb.getAttendanceFromFirestore(classId);
+      if (fbAttendance.length > 0) {
+        persistentStore.syncAttendance(fbAttendance);
+        return fbAttendance;
+      }
+    } catch (e) {
+      // fallback
+    }
+    return persistentStore.getAttendance(classId);
+  },
+
   async manualUpdateAttendance(payload: {
     classId: string;
     studentEmail: string;

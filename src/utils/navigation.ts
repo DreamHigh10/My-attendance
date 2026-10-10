@@ -1,5 +1,5 @@
 export type AppView = 'student' | 'admin';
-export type AdminTab = 'classes' | 'attendance' | 'emails' | 'roster' | 'cohorts';
+export type AdminTab = 'classes' | 'attendance' | 'leaderboard' | 'emails' | 'roster' | 'cohorts';
 
 export interface RouteState {
   view: AppView;
@@ -20,6 +20,8 @@ export function parseCurrentRoute(): RouteState {
     let tab: AdminTab = 'classes';
     if (path.includes('/attendance') || path.includes('/live')) {
       tab = 'attendance';
+    } else if (path.includes('/leaderboard') || path.includes('/rank')) {
+      tab = 'leaderboard';
     } else if (path.includes('/roster') || path.includes('/students')) {
       tab = 'roster';
     } else if (path.includes('/email') || path.includes('/broadcast')) {

@@ -67,6 +67,8 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
         ? 'Adu Oluwaseyi'
         : trimmed.includes('paulstanley')
         ? 'Paul Stanley Tobechukwu'
+        : trimmed.includes('munachimso')
+        ? 'Munachimso Moses'
         : 'Chiemela B.';
       onAdminAuthenticated(trimmed, name);
     } else {

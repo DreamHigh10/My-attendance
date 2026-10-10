@@ -5,10 +5,11 @@ import {
   Mail, 
   Users, 
   Settings,
-  Sparkles
+  Sparkles,
+  Trophy
 } from 'lucide-react';
 
-export type AdminTabType = 'classes' | 'attendance' | 'emails' | 'roster' | 'cohorts';
+export type AdminTabType = 'classes' | 'attendance' | 'leaderboard' | 'emails' | 'roster' | 'cohorts';
 
 interface AdminBottomNavProps {
   activeTab: AdminTabType;
@@ -39,6 +40,13 @@ export const AdminBottomNav: React.FC<AdminBottomNavProps> = ({
       icon: CheckCircle2,
       badge: attendanceCount > 0 ? String(attendanceCount) : undefined,
       badgeColor: 'bg-indigo-600',
+    },
+    {
+      id: 'leaderboard' as AdminTabType,
+      label: 'Ranking',
+      icon: Trophy,
+      badge: 'Pts',
+      badgeColor: 'bg-amber-500',
     },
     {
       id: 'emails' as AdminTabType,

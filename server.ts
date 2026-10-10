@@ -30,6 +30,7 @@ export const AUTHORIZED_ADMIN_EMAILS = [
   'aduoluwaseyi33@gmail.com',
   'paulstanleytobechukwu01@gmail.com',
   'chiemelab166@gmail.com',
+  'munachimsomoses04@gmail.com',
 ];
 
 interface CohortData {

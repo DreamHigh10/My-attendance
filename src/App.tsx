@@ -220,6 +220,8 @@ export default function App() {
             onSelectCohort={handleCohortChange}
             currentUser={currentUser}
             onGoogleSignIn={handleGoogleSignIn}
+            allStudents={students}
+            allAttendanceRecords={attendanceRecords}
           />
         ) : (
           <AdminDashboard

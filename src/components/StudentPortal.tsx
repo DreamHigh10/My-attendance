@@ -22,14 +22,20 @@ import {
   Search,
   Lock,
   Hourglass,
-  ShieldAlert
+  ShieldAlert,
+  Trophy,
+  Flame,
+  HelpCircle
 } from 'lucide-react';
 import { api } from '../services/api';
 import { firebaseAuth } from '../services/firebase';
-import { Cohort, ClassSession, Student, StudentLookupResponse } from '../types';
+import { Cohort, ClassSession, Student, StudentLookupResponse, AttendanceRecord } from '../types';
 import { UpcomingClassesSection } from './common/UpcomingClassesSection';
 import { DreamTeamLogo } from './common/DreamTeamLogo';
 import { AttendanceCountdown } from './common/AttendanceCountdown';
+import { GreatnessLeaderboard } from './leaderboard/GreatnessLeaderboard';
+import { calculateGreatnessLeaderboard, LeaderboardUserEntry } from '../utils/leaderboard';
+import { PointsBreakdownModal } from './common/PointsBreakdownModal';
 
 interface StudentPortalProps {
   cohorts: Cohort[];
@@ -37,6 +43,8 @@ interface StudentPortalProps {
   onSelectCohort: (id: string) => void;
   currentUser?: { email: string; name: string } | null;
   onGoogleSignIn?: (email: string, name: string) => void;
+  allStudents?: Student[];
+  allAttendanceRecords?: AttendanceRecord[];
 }
 
 export const StudentPortal: React.FC<StudentPortalProps> = ({
@@ -45,6 +53,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   onSelectCohort,
   currentUser,
   onGoogleSignIn,
+  allStudents = [],
+  allAttendanceRecords = [],
 }) => {
   // Input fields
   const [emailInput, setEmailInput] = useState<string>(() => {
@@ -73,6 +83,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [isWindowElapsed, setIsWindowElapsed] = useState<boolean>(false);
   const [isWindowNotStarted, setIsWindowNotStarted] = useState<boolean>(false);
+
+  // Greatness Leaderboard State
+  const [portalStudents, setPortalStudents] = useState<Student[]>(allStudents);
+  const [portalAttendance, setPortalAttendance] = useState<AttendanceRecord[]>(allAttendanceRecords);
+  const [isPointsModalOpen, setIsPointsModalOpen] = useState(false);
 
   const activeClass = allCohortClasses.find(c => c.id === selectedClassId)
     || allCohortClasses.find(c => c.isAttendanceOpen && (!c.attendanceEndTime || Date.now() <= new Date(c.attendanceEndTime).getTime()))
@@ -112,6 +127,26 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       handleLookupStudent(emailInput.trim());
     }
   }, [selectedCohortId]);
+
+  useEffect(() => {
+    if (allStudents && allStudents.length > 0) {
+      setPortalStudents(allStudents);
+    } else {
+      api.getStudents(selectedCohortId).then((stus) => {
+        if (stus.length > 0) setPortalStudents(stus);
+      }).catch(() => {});
+    }
+  }, [allStudents, selectedCohortId]);
+
+  useEffect(() => {
+    if (allAttendanceRecords && allAttendanceRecords.length > 0) {
+      setPortalAttendance(allAttendanceRecords);
+    } else {
+      api.getAttendance().then((recs) => {
+        if (recs.length > 0) setPortalAttendance(recs);
+      }).catch(() => {});
+    }
+  }, [allAttendanceRecords, selectedCohortId]);
 
   const loadCohortClasses = async () => {
     try {
@@ -238,6 +273,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           studentStats: res.studentStats,
         });
 
+        // Add to portal attendance records to update Greatness Leaderboard live
+        setPortalAttendance((prev) => [res.record, ...prev.filter((p) => p.id !== res.record.id)]);
+
         // Trigger confetti celebration
         try {
           confetti({
@@ -267,6 +305,20 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   };
 
   const currentCohort = cohorts.find((c) => c.id === selectedCohortId) || cohorts[0];
+
+  // Calculate Greatness Leaderboard dynamically
+  const leaderboardEntries = calculateGreatnessLeaderboard(
+    portalStudents,
+    allCohortClasses,
+    portalAttendance,
+    selectedCohortId
+  );
+
+  // User's specific entry on the Greatness leaderboard if email matches
+  const currentCleanEmail = (emailInput || currentUser?.email || '').trim().toLowerCase();
+  const userLeaderboardEntry = currentCleanEmail
+    ? leaderboardEntries.find((e) => e.email.toLowerCase() === currentCleanEmail)
+    : undefined;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
@@ -337,28 +389,58 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </div>
           </div>
 
-          {/* Attendance Track Record Banner */}
-          {markedSuccessData.studentStats && (
-            <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-indigo-100 rounded-2xl p-4.5 max-w-xl mx-auto mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-3.5 text-left">
-                <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
-                  <Award className="w-7 h-7" />
+          {/* Attendance Track Record & Greatness Rank Banner */}
+          <div className="space-y-3 max-w-xl mx-auto mb-8">
+            {userLeaderboardEntry && (
+              <div className="bg-gradient-to-r from-amber-500 via-indigo-600 to-emerald-600 text-white rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-indigo-600/20">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center font-black text-lg border border-white/30">
+                    #{userLeaderboardEntry.rank}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full inline-block mb-0.5">
+                      The Greatness Rank
+                    </span>
+                    <h4 className="text-sm font-black text-white">
+                      {userLeaderboardEntry.totalPoints} Total Consistency Points
+                    </h4>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-sm font-black text-slate-900">Cohort Attendance Record</h4>
-                  <p className="text-xs font-medium text-slate-600">
-                    {markedSuccessData.studentStats.totalAttended} of {markedSuccessData.studentStats.totalCohortClasses} classes attended
-                  </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('greatness-leaderboard');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white text-slate-900 font-black text-xs shadow-xs hover:bg-slate-100 transition-all cursor-pointer"
+                >
+                  View Rank &rarr;
+                </button>
+              </div>
+            )}
+
+            {markedSuccessData.studentStats && (
+              <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-indigo-100 rounded-2xl p-4.5 flex items-center justify-between">
+                <div className="flex items-center gap-3.5 text-left">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
+                    <Award className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900">Cohort Attendance Record</h4>
+                    <p className="text-xs font-medium text-slate-600">
+                      {markedSuccessData.studentStats.totalAttended} of {markedSuccessData.studentStats.totalCohortClasses} classes attended
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-black text-emerald-600">
+                    {markedSuccessData.studentStats.attendanceRate}%
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-500 block uppercase">Overall Score</span>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-2xl font-black text-emerald-600">
-                  {markedSuccessData.studentStats.attendanceRate}%
-                </span>
-                <span className="text-[10px] font-bold text-slate-500 block uppercase">Overall Score</span>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
@@ -583,18 +665,98 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   </div>
                 </div>
 
-                {/* Previous Attendance Stats Streak */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Award className="w-4 h-4 text-indigo-600" />
-                    <span className="text-xs font-bold text-slate-700">
-                      Previous Classes Attended: <strong className="text-slate-900">{matchedStudentData.totalAttended ?? 0}</strong>
+                {/* Greatness Rank & Points Highlights */}
+                {userLeaderboardEntry ? (
+                  <div className="bg-gradient-to-r from-amber-50 via-indigo-50 to-emerald-50 border-2 border-amber-200 rounded-2xl p-4 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white font-black text-base flex items-center justify-center shadow-md shadow-amber-500/25 flex-shrink-0">
+                          #{userLeaderboardEntry.rank}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md border border-amber-300">
+                              Your Greatness Rank
+                            </span>
+                            <span className="text-xs font-black text-slate-900">
+                              {userLeaderboardEntry.rank === 1 ? '🥇 1st Place Champion' : userLeaderboardEntry.rank === 2 ? '🥈 2nd Place' : userLeaderboardEntry.rank === 3 ? '🥉 3rd Place' : `Ranked #${userLeaderboardEntry.rank} in Cohort`}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 mt-0.5 font-medium">
+                            Total Consistency Points: <strong className="text-indigo-600 font-black">{userLeaderboardEntry.totalPoints} pts</strong>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsPointsModalOpen(true)}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1 cursor-pointer transition-all hover:scale-105"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Points Allotment</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const el = document.getElementById('greatness-leaderboard');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-xs flex items-center gap-1 cursor-pointer transition-all hover:scale-105"
+                        >
+                          <Trophy className="w-3.5 h-3.5" />
+                          <span>View Leaderboard</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Breakdown Chips */}
+                    <div className="mt-3 pt-3 border-t border-amber-200/70 grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="bg-white/80 p-2 rounded-xl border border-indigo-100">
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase">Attendance (10pt)</span>
+                        <span className="font-black text-indigo-700">{userLeaderboardEntry.attendancePoints} pts</span>
+                        <span className="text-[10px] text-slate-400 block font-normal">({userLeaderboardEntry.totalAttended} classes)</span>
+                      </div>
+                      <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase">Comments (5pt)</span>
+                        <span className="font-black text-emerald-700">{userLeaderboardEntry.commentPoints} pts</span>
+                        <span className="text-[10px] text-slate-400 block font-normal">({userLeaderboardEntry.commentsCount} notes)</span>
+                      </div>
+                      <div className="bg-white/80 p-2 rounded-xl border border-amber-100">
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase">Speed (1-5pt)</span>
+                        <span className="font-black text-amber-700">+{userLeaderboardEntry.speedPoints} pts</span>
+                        <span className="text-[10px] text-slate-400 block font-normal">({userLeaderboardEntry.speedBonusCount}x early bird)</span>
+                      </div>
+                    </div>
+
+                    {/* Visual Bar for Attendance Level */}
+                    <div className="mt-3 space-y-1">
+                      <div className="flex items-center justify-between text-[11px] font-bold">
+                        <span className="text-slate-600">Cohort Attendance Level</span>
+                        <span className="text-emerald-700">{userLeaderboardEntry.attendanceRate}% ({userLeaderboardEntry.totalAttended}/{userLeaderboardEntry.totalClasses || matchedStudentData.totalCohortClasses || 0})</span>
+                      </div>
+                      <div className="w-full bg-slate-200/80 rounded-full h-2 overflow-hidden shadow-inner">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, userLeaderboardEntry.attendanceRate)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4 text-indigo-600" />
+                      <span className="text-xs font-bold text-slate-700">
+                        Previous Classes Attended: <strong className="text-slate-900">{matchedStudentData.totalAttended ?? 0}</strong>
+                      </span>
+                    </div>
+                    <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      {matchedStudentData.attendanceRate ?? 100}% Rate
                     </span>
                   </div>
-                  <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    {matchedStudentData.attendanceRate ?? 100}% Rate
-                  </span>
-                </div>
+                )}
               </div>
             )}
 
@@ -687,6 +849,20 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </div>
       )}
 
+      {/* THE GREATNESS RANK & CONSISTENCY LEADERBOARD (VISIBLE TO EVERYONE ON HOMEPAGE) */}
+      <div className="mt-12 pt-8 border-t border-slate-200">
+        <GreatnessLeaderboard
+          entries={leaderboardEntries}
+          cohortName={currentCohort?.name || 'Cohort 2'}
+          userEmail={emailInput || currentUser?.email || ''}
+          onSelectStudentEmail={(selectedEmail) => {
+            setEmailInput(selectedEmail);
+            handleLookupStudent(selectedEmail);
+            window.scrollTo({ top: 120, behavior: 'smooth' });
+          }}
+        />
+      </div>
+
       {/* UPCOMING CLASSES SCHEDULE & PREPARATION */}
       <div className="mt-12 pt-8 border-t border-slate-200">
         <UpcomingClassesSection
@@ -700,6 +876,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           }}
         />
       </div>
+
+      {/* Points breakdown popup */}
+      <PointsBreakdownModal
+        isOpen={isPointsModalOpen}
+        onClose={() => setIsPointsModalOpen(false)}
+      />
 
       {/* Cohort Help Footer */}
       <div className="mt-10 text-center text-xs font-medium text-slate-500">

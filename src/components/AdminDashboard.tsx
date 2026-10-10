@@ -23,6 +23,8 @@ import { AdminBottomNav, AdminTabType } from './admin/AdminBottomNav';
 import { DreamTeamLogo } from './common/DreamTeamLogo';
 import { AdminAccessGate } from './admin/AdminAccessGate';
 import { isAuthorizedAdmin } from '../constants/admins';
+import { GreatnessLeaderboard } from './leaderboard/GreatnessLeaderboard';
+import { calculateGreatnessLeaderboard } from '../utils/leaderboard';
 
 interface AdminDashboardProps {
   cohorts: Cohort[];
@@ -197,6 +199,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           initialSelectedClassId={tabExtraState?.classId}
           onRefresh={onRefresh}
         />
+      )}
+
+      {activeTab === 'leaderboard' && (
+        <div className="space-y-6">
+          <GreatnessLeaderboard
+            entries={calculateGreatnessLeaderboard(students, classes, attendanceRecords, selectedCohortId)}
+            cohortName={selectedCohort?.name || 'Cohort 2'}
+            userEmail={currentUser?.email}
+          />
+        </div>
       )}
 
       {activeTab === 'emails' && (

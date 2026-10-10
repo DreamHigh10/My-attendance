@@ -78,14 +78,14 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
           Select your Google account to access attendance tracking and admin hub:
         </p>
 
-        {/* 1-Click Fast Account Button for Lead Admin / User */}
+        {/* Fast Account Buttons for Admins */}
         <div className="space-y-2 mb-4 text-left">
           <button
             onClick={() => onSelectAccount(suggestedEmail, 'Engr. Kehinde Ogungbade')}
-            className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-indigo-50/90 hover:bg-indigo-100 border-2 border-indigo-200 hover:border-indigo-300 transition-all cursor-pointer group shadow-xs"
+            className="w-full flex items-center justify-between p-3 rounded-2xl bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-200 hover:border-indigo-300 transition-all cursor-pointer group shadow-xs"
           >
             <div className="flex items-center gap-3 truncate">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-xs flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
                 KO
               </div>
               <div className="text-left truncate">
@@ -98,6 +98,26 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               </div>
             </div>
             <ArrowRight className="w-4 h-4 text-indigo-600 group-hover:translate-x-1 transition-transform flex-shrink-0 ml-2" />
+          </button>
+
+          <button
+            onClick={() => onSelectAccount('munachimsomoses04@gmail.com', 'Munachimso Moses')}
+            className="w-full flex items-center justify-between p-3 rounded-2xl bg-purple-50/90 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 transition-all cursor-pointer group shadow-xs"
+          >
+            <div className="flex items-center gap-3 truncate">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 text-white font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
+                MM
+              </div>
+              <div className="text-left truncate">
+                <p className="text-xs font-black text-slate-900 group-hover:text-purple-900 truncate">
+                  munachimsomoses04@gmail.com
+                </p>
+                <p className="text-[10px] text-purple-700 font-bold truncate">
+                  Munachimso Moses (Admin Facilitator)
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-purple-600 group-hover:translate-x-1 transition-transform flex-shrink-0 ml-2" />
           </button>
         </div>
 

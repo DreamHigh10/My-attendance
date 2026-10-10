@@ -4,7 +4,8 @@ import {
   ShieldCheck, 
   Layers, 
   LogOut,
-  Radio
+  Radio,
+  Trophy
 } from 'lucide-react';
 import { Cohort } from '../types';
 import { DreamTeamLogo } from './common/DreamTeamLogo';
@@ -20,6 +21,7 @@ interface NavbarProps {
   onSignOut?: () => void;
   onGoogleSignInClick?: () => void;
   isSigningIn?: boolean;
+  onScrollToLeaderboard?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSignOut,
   onGoogleSignInClick,
   isSigningIn,
+  onScrollToLeaderboard,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-2xl shadow-xs">
@@ -69,6 +72,25 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               )}
             </div>
+
+            {/* Greatness Rank Leaderboard Quick Button */}
+            <button
+              onClick={() => {
+                if (currentView !== 'student') onViewChange('student');
+                if (onScrollToLeaderboard) {
+                  onScrollToLeaderboard();
+                } else {
+                  const el = document.getElementById('greatness-leaderboard');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              title="View Greatness Rank Leaderboard"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black transition-all hover:scale-[1.02] cursor-pointer shadow-2xs"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-600" />
+              <span className="hidden sm:inline">Greatness Rank</span>
+              <span className="sm:hidden font-bold">Rank</span>
+            </button>
 
             {/* Google / Account Status */}
             {currentUser ? (
