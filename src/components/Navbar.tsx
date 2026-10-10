@@ -133,34 +133,32 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             ) : null}
 
-            {/* Admin Hub Access - Confidential: Only visible and accessible to verified administrators */}
-            {currentUser && isAuthorizedAdmin(currentUser.email) ? (
-              <nav aria-label="Portal Mode" className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200">
-                <button
-                  onClick={() => onViewChange('student')}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                    currentView === 'student'
-                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Student Portal</span>
-                </button>
+            {/* View Switcher: Student Portal & Admin Hub (Protected by AdminAccessGate) */}
+            <nav aria-label="Portal Mode" className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200">
+              <button
+                onClick={() => onViewChange('student')}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  currentView === 'student'
+                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Student</span>
+              </button>
 
-                <button
-                  onClick={() => onViewChange('admin')}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                    currentView === 'admin'
-                      ? 'bg-slate-900 text-white shadow-md'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                  }`}
-                >
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Admin Hub</span>
-                </button>
-              </nav>
-            ) : null}
+              <button
+                onClick={() => onViewChange('admin')}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  currentView === 'admin'
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Admin Hub</span>
+              </button>
+            </nav>
 
           </div>
 

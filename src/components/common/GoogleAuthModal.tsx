@@ -74,63 +74,6 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
           </svg>
           <h3 className="text-xl font-black text-slate-900">Google Sign-in</h3>
         </div>
-        <p className="text-xs text-slate-500 font-medium mb-5">
-          Select your Google account to access attendance tracking and admin hub:
-        </p>
-
-        {/* Fast Account Buttons for Admins */}
-        <div className="space-y-2 mb-4 text-left">
-          <button
-            onClick={() => onSelectAccount(suggestedEmail, 'Engr. Kehinde Ogungbade')}
-            className="w-full flex items-center justify-between p-3 rounded-2xl bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-200 hover:border-indigo-300 transition-all cursor-pointer group shadow-xs"
-          >
-            <div className="flex items-center gap-3 truncate">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
-                KO
-              </div>
-              <div className="text-left truncate">
-                <p className="text-xs font-black text-slate-900 group-hover:text-indigo-900 truncate">
-                  {suggestedEmail}
-                </p>
-                <p className="text-[10px] text-indigo-700 font-bold truncate">
-                  Engr. Kehinde Ogungbade (Admin Facilitator)
-                </p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-indigo-600 group-hover:translate-x-1 transition-transform flex-shrink-0 ml-2" />
-          </button>
-
-          <button
-            onClick={() => onSelectAccount('munachimsomoses04@gmail.com', 'Munachimso Moses')}
-            className="w-full flex items-center justify-between p-3 rounded-2xl bg-purple-50/90 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 transition-all cursor-pointer group shadow-xs"
-          >
-            <div className="flex items-center gap-3 truncate">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 text-white font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
-                MM
-              </div>
-              <div className="text-left truncate">
-                <p className="text-xs font-black text-slate-900 group-hover:text-purple-900 truncate">
-                  munachimsomoses04@gmail.com
-                </p>
-                <p className="text-[10px] text-purple-700 font-bold truncate">
-                  Munachimso Moses (Admin Facilitator)
-                </p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-purple-600 group-hover:translate-x-1 transition-transform flex-shrink-0 ml-2" />
-          </button>
-        </div>
-
-        {/* Or enter any Google Email */}
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-[10px]">
-            <span className="bg-white px-2 text-slate-400 font-bold uppercase">Or sign in with another email</span>
-          </div>
-        </div>
-
         <form onSubmit={handleCustomSubmit} className="space-y-3 text-left">
           <div>
             <input

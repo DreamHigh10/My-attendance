@@ -108,7 +108,7 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
             </p>
             <p className="font-mono">{currentUser.email}</p>
             <p className="mt-1 text-slate-600">
-              Please sign in with one of the authorized facilitator accounts below.
+              Please sign in with your authorized administrator Google account or enter your credentials.
             </p>
           </div>
         )}
