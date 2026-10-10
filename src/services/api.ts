@@ -2,9 +2,17 @@ import { Cohort, ClassSession, AttendanceRecord, Student, EmailCampaign, ClassVe
 import { persistentStore } from './storage';
 import { firebaseDb } from './firebase';
 
-async function safeFetchJson<T>(url: string, options?: RequestInit, fallbackData?: T): Promise<{ ok: boolean; data: any; isHtmlError?: boolean }> {
+async function safeFetchJson<T>(url: string, options?: RequestInit, fallbackData?: T, timeoutMs = 2000): Promise<{ ok: boolean; data: any; isHtmlError?: boolean }> {
   try {
-    const res = await fetch(url, options);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    const res = await fetch(url, {
+      ...options,
+      signal: options?.signal || controller.signal,
+    });
+    clearTimeout(timer);
+
     const contentType = res.headers.get('content-type') || '';
     
     // Check if response is actually JSON

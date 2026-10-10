@@ -10,6 +10,7 @@ import { ArchitecturalBackground } from './components/common/ArchitecturalBackgr
 import { GoogleAuthModal } from './components/common/GoogleAuthModal';
 import { parseCurrentRoute, navigateTo, AppView, AdminTab } from './utils/navigation';
 import { RefreshCw, GraduationCap, Sparkles } from 'lucide-react';
+import { DreamTeamLogo } from './components/common/DreamTeamLogo';
 
 export default function App() {
   const initialRoute = parseCurrentRoute();
@@ -177,16 +178,25 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800">
-        <div className="relative flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-emerald-500 p-0.5 shadow-2xl mb-4 animate-pulse">
-          <div className="w-full h-full bg-white rounded-[22px] flex items-center justify-center">
-            <GraduationCap className="w-8 h-8 text-indigo-600" />
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 p-4">
+        {/* Architectural Background in loading */}
+        <ArchitecturalBackground />
+        
+        <div className="relative z-10 flex flex-col items-center justify-center bg-white/90 backdrop-blur-xl border border-slate-200/80 p-8 sm:p-10 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+          {/* Authentic Dream Team Constellation Logo */}
+          <div className="mb-5 flex justify-center">
+            <DreamTeamLogo size="xl" showText={true} animated={true} />
           </div>
+
+          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-4">
+            <div className="h-full bg-gradient-to-r from-violet-600 via-indigo-600 to-emerald-500 rounded-full animate-pulse w-3/4 mx-auto" />
+          </div>
+
+          <p className="text-xs sm:text-sm font-bold text-slate-700 flex items-center justify-center gap-2">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+            <span>Loading Attendance Hub &amp; Leaderboard...</span>
+          </p>
         </div>
-        <p className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
-          Loading Dream Team Project Attendance Hub...
-        </p>
       </div>
     );
   }
